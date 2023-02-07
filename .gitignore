@@ -1,0 +1,68 @@
+# Byte-compiled, Optimized, and DLL Files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Cache
+.cache
+.pytest_cache/
+.webassets-cache
+.mypy_cache/
+.mf
+.rollup.cache
+tsconfig.tsbuildinfo
+
+# Code editor (IntelliJ & VSCode)
+.idea/
+.vscode/
+
+# Database-related
+*.sqlite3
+*.db
+postgres-data
+
+# Distribution Packages
+.Python
+build/
+dist/
+eggs/
+.eggs/
+lib/
+lib64/
+wheels/
+.pnpm-store/
+
+# Dotenvs
+.pnp
+.pnp.js
+.env
+env/*
+.DS_Store
+
+# Log Files
+logs/*
+*.log
+pip-log.txt
+*.log*
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Tests and Coverage Reports:
+.tox/
+.coverage
+coverage/**
+coverage.*
+cov.*
+*.cover
+
+# Virtual Environment & Libraries
+.python-version
+.venv
+venv/
+venv.bak/
+node_modules/
+
+# Yarn
+.yarn/
