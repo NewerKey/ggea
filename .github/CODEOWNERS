@@ -1,15 +1,18 @@
 # Python related code
-*.py @Aeternalis-Ingenium
+*.py @Aeternalis-Ingenium @JosefLeinweber
 
 # Java Script related code
-*.tsx @Aeternalis-Ingenium
-*.ts @Aeternalis-Ingenium
-*.cjs @Aeternalis-Ingenium
+*.js @kirill967
+*.jsx @kirill967
+*.rc @kirill967
+*.tsx @kirill967
+*.ts @kirill967
+*.cjs @kirill967
 
 # HTML & CSS related code
-*.html @Aeternalis-Ingenium
-*.css @Aeternalis-Ingenium
-*.scss @Aeternalis-Ingenium
+*.html @kirill967
+*.css @kirill967
+*.scss @kirill967
 
 # JSON related code
 *.json @Aeternalis-Ingenium
@@ -17,10 +20,6 @@
 # DevOps related code
 *.yml @Aeternalis-Ingenium @NewerKey
 *.yaml @Aeternalis-Ingenium @NewerKey
-
-# Terraform
 *.tf @Aeternalis-Ingenium @NewerKey
-
-# Docker related code
 Dockerfile @Aeternalis-Ingenium @NewerKey
 Dockerfile.* @Aeternalis-Ingenium @NewerKey
