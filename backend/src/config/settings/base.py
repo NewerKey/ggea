@@ -9,7 +9,7 @@ ROOT_DIR: pathlib.Path = pathlib.Path(__file__).parent.parent.parent.parent.pare
 
 class Settings(pydantic.BaseSettings):
 
-    TITLE: str = "Gotta Guess Em All!"
+    TITLE: str = "Gotta Guess'Em All!"
     VERSION: str = "0.1.0"
     TIMEZONE: str = "UTC"
     DESCRIPTION: str | None = None
@@ -51,10 +51,10 @@ class Settings(pydantic.BaseSettings):
 
     IS_ALLOWED_CREDENTIALS: bool = decouple.config("IS_ALLOWED_CREDENTIALS", cast=bool)  # type: ignore
     ALLOWED_ORIGINS: list[str] = [
-        decouple.config("ALLOWED_ORIGIN_FRONTEND_LOCALHOST_DEFAULT", cast=str), # type: ignore
+        decouple.config("ALLOWED_ORIGIN_FRONTEND_LOCALHOST_DEFAULT", cast=str),  # type: ignore
         decouple.config("ALLOWED_ORIGIN_FRONTEND_LOCALHOST_CUSTOM", cast=str),  # type: ignore
-        decouple.config("ALLOWED_ORIGIN_FRONTEND_DOCKER", cast=str),    # type: ignore
-        decouple.config("ALLOWED_ORIGIN_FRONTEND_PRODUCTION", cast=str) # type: ignore
+        decouple.config("ALLOWED_ORIGIN_FRONTEND_DOCKER", cast=str),  # type: ignore
+        decouple.config("ALLOWED_ORIGIN_FRONTEND_PRODUCTION", cast=str),  # type: ignore
     ]
     ALLOWED_METHODS: list[str] = [decouple.config("ALLOWED_METHOD_1")]  # type: ignore
     ALLOWED_HEADERS: list[str] = [decouple.config("ALLOWED_HEADER_1")]  # type: ignore
