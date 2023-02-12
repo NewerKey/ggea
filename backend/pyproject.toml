@@ -4,11 +4,11 @@ version = "0.1.0"
 description = "A web application where ML meets Pokemon world and users are fighting to become the Grandmaster of Classification Problem."
 authors = [
     {name = "Aeternalis-Ingenium", email="aeternalisingenium@proton.me"},
-    {name = "Merle Mauer", email=""},
-    {name = "Jan Magayanes", email=""},
+    {name = "Merle Mauer", email="merle.mauer@code.berlin"},
+    {name = "Jan Magayanes", email="jan.magayanes@code.berlin"},
     {name = "Yvette Nartey", email="newerkey@gmail.com"},
-    {name = "Josef Leinweber", email=""},
-    {name = "Kirill Tsvetkov", email=""},
+    {name = "Josef Leinweber", email="josef.leinweber@code.berlin"},
+    {name = "Kirill Tsvetkov", email="llirik302@gmail.com"},
 ]
 classifiers = [
     "Topic :: Software Development"
