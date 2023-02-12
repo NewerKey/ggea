@@ -3,3 +3,91 @@
 A Pokemon world combined with Machine Learning technology where users battle each others to become the Grandmaster of Classification Problem!
 
 ---
+
+# Introduction
+
+This web application is a full-stack software developed with:
+
+* Database $\rightarrow$ PostgreSQL with Asynchronous SQLAlchemy and Alembic.
+* Backend $\rightarrow$ FastAPI, Pydantic, Starlette, Uvicorn, and PyTest.
+* Frontend $\rightarrow$ React JS, TypeScript, and Jest.
+
+The URL list for the dockerized application:
+
+* Dockerized DB Editor $\rightarrow$ `http://0.0.0.0:8081`
+* Dockerized Backend API $\rightarrow$ `http://0.0.0.0:8001/api`
+* Dockerized Backend API Dockumentation $\rightarrow$ `http://0.0.0.0:8001/docs`
+* Dockerized Frontend $\rightarrow$ `http://0.0.0.0:3001`
+
+or the without docker:
+
+* DB Editor $\rightarrow$ Depends on your machine's database editor
+* Backend API $\rightarrow$ `http://localhost:8000/api`
+* Backend API Dockumentation $\rightarrow$ `http://localhost:8000/docs`
+* Frontend $\rightarrow$ `http://localhost:3000`
+
+The default application's settings utilizes the `development` environment. Please change it via terminal for the needed environment:
+
+* Development settings: `DEVELOPMENT=DEV`
+* Production settings: `DEVELOPMENT=PROD`
+* Staging (for testing) settings: `DEVELOPMENT=STAGE`
+
+# Set Up Guide
+
+Before the step-by-step set up, please ensure that you have:
+
+* Docker dashboard, otherwise for Mac users run `brew install --cask docker`,
+* most recent source code, otherwise execute this in your terminal `git pull --rebase origin trunk`,
+* put the `env` file that is uploaded into Slack in the root directory, and
+* rename `env` into `.env`.
+
+Once the above preliminary requirements are fulfilled, follow these steps:
+
+* Step 1: Give permission to the `.sh` files:
+
+    ```shell
+    # One for backend if it exists
+    chmod x+ backend/entrypoints/db.sh
+    
+    # One for frontend if it exists
+    chmod x+ frontend/entrypoints/backend.sh
+    ```
+
+* Step 2: install `pre-commit` for your working environment`
+
+    ```shell
+    pre-commit
+    ```
+
+* Step 3: Build the containers:
+
+    ```shell
+    docker-compose build
+    ```
+
+* Step 4: Generate database migration (of course if exists!):
+
+    ```shell
+    docker exec ggea_backend alembic revision --autogenerate -m "YOUR_REVISION_MESSAGE_HERE"
+    docker exec ggea_backend alembic upgrade head
+    ```
+
+* Step 5: Start the containers:
+
+    ```shell
+    docker-compose up
+    ```
+
+* Optional Step 1: Always remove your container when updating it:
+
+    ```shell
+    docker-compose down
+    ```
+
+* Optional Step 2: One step for building + starting the application:
+
+    ```shell
+    docker-compose up -d --build
+    ```
+
+Now you can go to the above URLs to find our application's page!
