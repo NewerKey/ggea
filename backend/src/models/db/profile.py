@@ -15,12 +15,11 @@ class Profile(BaseTable):
     __tablename__ = "profile"
 
     id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(primary_key=True, autoincrement="auto")
-    first_name: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=64), nullable=False)
-    last_name: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=64), nullable=False)
-    photo: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=248), nullable=False, unique=True)
-    win: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer(length=64), nullable=False, default=0)
-    loss: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer(length=64), nullable=False, default=0)
-    mmr: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer(length=64), nullable=False, default=80)
+    first_name: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=64), nullable=True)
+    last_name: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=64), nullable=True)
+    photo: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=248), nullable=True)
+    win: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer(), nullable=False, default=0)
+    loss: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer(), nullable=False, default=0)
     created_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
         sqlalchemy.DateTime(timezone=True), nullable=False, server_default=sqlalchemy_functions.now()
     )

@@ -2,20 +2,18 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config
+from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlalchemy.pool import NullPool as SQLAlchemyNullPool
 
 from src.repository.base import BaseTable
 from src.repository.database import db
 
 config = context.config
-config.set_main_option(name="sqlalchemy.url", value=str(db.async_engine))
-target_metadata = BaseTable.metadata
-
+config.set_main_option(name="sqlalchemy.url", value=str(db.set_async_driver))
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+target_metadata = BaseTable.metadata
 
 
 def run_migrations_offline() -> None:
@@ -60,7 +58,7 @@ async def run_migrations_online() -> None:
         engine_from_config(
             config.get_section(config.config_ini_section),  # type: ignore
             prefix="sqlalchemy.",
-            poolclass=SQLAlchemyNullPool,
+            poolclass=pool.NullPool,
             future=True,
         )
     )

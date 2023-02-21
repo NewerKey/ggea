@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker as sqlalchemy_async_sessionmaker,
     AsyncSession as SQLAlchemyAsyncSession,
 )
+from sqlalchemy.pool import PoolProxiedConnection as SQLAlchemyProxiedConnection
 
 
 class BaseCRUDRepository:

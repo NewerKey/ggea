@@ -1,10 +1,10 @@
 import typing
 
 import sqlalchemy
-from sqlalchemy.orm import DeclarativeBase, MappedAsDataclass
+from sqlalchemy.orm import DeclarativeBase
 
 
-class DBBaseTable(MappedAsDataclass, DeclarativeBase):
+class DBBaseTable(DeclarativeBase):
     metadata: sqlalchemy.MetaData = sqlalchemy.MetaData()
 
 
