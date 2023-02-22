@@ -22,6 +22,7 @@ class Settings(pydantic.BaseSettings):
     OPENAPI_URL: str = "/openapi.json"
     REDOC_URL: str = "/redoc"
     OPENAPI_PREFIX: str = ""
+    STATIC_DIR_NAME: str = decouple.config("STATIC_DIR_NAME", cast=str)  # type: ignore
 
     DB_POSTGRES_HOST: str = decouple.config("POSTGRES_DEV_HOST", cast=str)  # type: ignore
     DB_MAX_POOL_CON: int = decouple.config("DB_MAX_POOL_CON", cast=int)  # type: ignore
@@ -39,10 +40,11 @@ class Settings(pydantic.BaseSettings):
     IS_DB_FORCE_ROLLBACK: bool = decouple.config("IS_DB_FORCE_ROLLBACK", cast=bool)  # type: ignore
     IS_DB_EXPIRE_ON_COMMIT: bool = decouple.config("IS_DB_EXPIRE_ON_COMMIT", cast=bool)  # type: ignore
 
-    API_TOKEN: str = decouple.config("API_TOKEN", cast=str)  # type: ignore
-    AUTH_TOKEN: str = decouple.config("AUTH_TOKEN", cast=str)  # type: ignore
+    API_HEADER_KEY_TITLE: pydantic.SecretStr = pydantic.SecretStr(decouple.config("API_HEADER_KEY_TITLE", cast=str))  # type: ignore
+    API_COOKIE_KEY_TITLE: pydantic.SecretStr = pydantic.SecretStr(decouple.config("API_COOKIE_KEY_TITLE", cast=str))  # type: ignore
+    API_QUERY_KEY_TITLE: pydantic.SecretStr = pydantic.SecretStr(decouple.config("API_QUERY_KEY_TITLE", cast=str))  # type: ignore
     JWT_TOKEN_PREFIX: str = decouple.config("JWT_TOKEN_PREFIX", cast=str)  # type: ignore
-    JWT_SECRET_KEY: str = decouple.config("JWT_SECRET_KEY", cast=str)  # type: ignore
+    JWT_SECRET_KEY: pydantic.SecretStr = pydantic.SecretStr(decouple.config("JWT_SECRET_KEY", cast=str))  # type: ignore
     JWT_SUBJECT: str = decouple.config("JWT_SUBJECT", cast=str)  # type: ignore
     JWT_MIN: int = decouple.config("JWT_MIN", cast=int)  # type: ignore
     JWT_HOUR: int = decouple.config("JWT_HOUR", cast=int)  # type: ignore
@@ -76,6 +78,7 @@ class Settings(pydantic.BaseSettings):
     AWS_S3_POKEMON_IMAGE_URI: str = decouple.config("AWS_S3_POKEMON_IMAGE_URI", cast=str)  # type: ignore
     AWS_S3_SKLEARN_MODEL_URI: str = decouple.config("AWS_S3_SKLEARN_MODEL_URI", cast=str)  # type: ignore
     AWS_S3_TF_MODEL_URI: str = decouple.config("AWS_S3_TF_MODEL_URI", cast=str)  # type: ignore
+    AWS_S3_PT_MODEL_URI: str = decouple.config("AWS_S3_PT_MODEL_URI", cast=str)  # type: ignore
     AWS_IAM_USERNAME: str = decouple.config("AWS_IAM_USERNAME", cast=str)  # type: ignore
     AWS_IAM_ARN: str = decouple.config("AWS_IAM_ARN", cast=str)  # type: ignore
     AWS_SERVICE_NAME: str = decouple.config("AWS_SERVICE_NAME", cast=str)  # type: ignore
@@ -85,10 +88,13 @@ class Settings(pydantic.BaseSettings):
     AWS_S3_POKEMON_IMAGE_DIR: str = decouple.config("AWS_S3_POKEMON_IMAGE_DIR", cast=str)  # type: ignore
     AWS_S3_SKLEARN_MODEL_DIR: str = decouple.config("AWS_S3_SKLEARN_MODEL_DIR", cast=str)  # type: ignore
     AWS_S3_TF_MODEL_DIR: str = decouple.config("AWS_S3_TF_MODEL_DIR", cast=str)  # type: ignore
+    AWS_S3_PT_MODEL_DIR: str = decouple.config("AWS_S3_PT_MODEL_DIR", cast=str)  # type: ignore
 
-    TF_MODEL_FILE_EXTENSION: str = decouple.config("TF_MODEL_FILE_EXTENSION", cast=str)  # type: ignore
-    SKLEARN_MODEL_FILE_EXTENSION: str = decouple.config("SKLEARN_MODEL_FILE_EXTENSION", cast=str)  # type: ignore
-    PYTORCH_MODEL_FILE_EXTENSION: str = decouple.config("PYTORCH_MODEL_FILE_EXTENSION", cast=str)  # type: ignore
+    TF_MODEL_FILE_EXTENSION_1: str = decouple.config("TF_MODEL_FILE_EXTENSION_1", cast=str)  # type: ignore
+    TF_MODEL_FILE_EXTENSION_2: str = decouple.config("TF_MODEL_FILE_EXTENSION_2", cast=str)  # type: ignore
+    SKLEARN_MODEL_FILE_EXTENSION_1: str = decouple.config("SKLEARN_MODEL_FILE_EXTENSION_1", cast=str)  # type: ignore
+    PT_MODEL_FILE_EXTENSION_1: str = decouple.config("PT_MODEL_FILE_EXTENSION_1", cast=str)  # type: ignore
+    PT_MODEL_FILE_EXTENSION_2: str = decouple.config("PT_MODEL_FILE_EXTENSION_2", cast=str)  # type: ignore
 
     class Config(pydantic.BaseConfig):
         case_sensitive: bool = True

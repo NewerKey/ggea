@@ -2,6 +2,7 @@ import fastapi
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.endpoints import router as api_endpoint_router
 from src.config.events import execute_backend_server_event_handler, terminate_backend_server_event_handler
 from src.config.setup import settings
 
@@ -23,7 +24,7 @@ def initialize_application() -> fastapi.FastAPI:
         "shutdown",
         terminate_backend_server_event_handler(app=app),
     )
-
+    app.include_router(router=api_endpoint_router, prefix=settings.API_PREFIX)
     return app
 
 
