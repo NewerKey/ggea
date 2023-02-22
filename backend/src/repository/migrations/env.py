@@ -1,20 +1,20 @@
 import asyncio
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from alembic import context
+from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
-
-from alembic import context
 
 from src.repository.base import DBBaseTable
 from src.repository.database import db
 
 config = context.config
 config.set_main_option(name="sqlalchemy.url", value=str(db.set_async_driver))
+
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
 target_metadata = DBBaseTable.metadata
 
 
