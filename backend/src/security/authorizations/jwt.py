@@ -30,7 +30,9 @@ class JWTManager:
             )
 
         to_encode.update(JWToken(expired_at=expired_at, subject=settings.JWT_SUBJECT).dict())
-        return jose_jwt.encode(claims=to_encode, key=settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+        return jose_jwt.encode(
+            claims=to_encode, key=settings.JWT_SECRET_KEY.get_secret_value(), algorithm=settings.JWT_ALGORITHM
+        )
 
     def generate_jwt(self, account: Account) -> str:
         if not account:
@@ -43,7 +45,9 @@ class JWTManager:
 
     def retrieve_details_from_jwt(self, token: str) -> tuple[str, str | pydantic.EmailStr]:
         try:
-            payload = jose_jwt.decode(token=token, key=settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+            payload = jose_jwt.decode(
+                token=token, key=settings.JWT_SECRET_KEY.get_secret_value(), algorithms=[settings.JWT_ALGORITHM]
+            )
             jwt_account = JWTAccount(username=payload["username"], email=payload["email"])
 
         except JoseJWTError as decode_error:

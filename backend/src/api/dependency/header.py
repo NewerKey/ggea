@@ -10,6 +10,7 @@ from src.models.schema.account import CurrentAccountInRead
 from src.repository.crud.account import AccountCRUDRepository
 from src.security.authorizations.jwt import jwt_manager
 from src.utility.design_patterns.factory.api_key import get_api_key
+from src.utility.enums.api_key import APIKeyTypes
 from src.utility.exceptions.custom import EntityDoesNotExist
 from src.utility.exceptions.http.exc_403 import http_exc_403_forbidden_request
 
@@ -22,7 +23,7 @@ def _get_auth_header_retriever(*, required: bool = True) -> typing.Callable:
     return _retrieve_auth_header if required else _retrieve_optional_auth_header
 
 
-async def _retrieve_auth_header(api_key: str = fastapi.Security(get_api_key(method="hr"))) -> str:
+async def _retrieve_auth_header(api_key: str = fastapi.Security(get_api_key(key_type=APIKeyTypes.HEADER))) -> str:
     try:
         token_prefix, token = api_key.split(" ")
     except ValueError as value_error:
@@ -34,10 +35,10 @@ async def _retrieve_auth_header(api_key: str = fastapi.Security(get_api_key(meth
 
 
 async def _retrieve_optional_auth_header(
-    authentication: typing.Optional[str] = fastapi.Security(get_api_key(method="hr", is_auto_error=False))
+    api_key: typing.Optional[str] = fastapi.Security(get_api_key(key_type=APIKeyTypes.HEADER, is_auto_error=False))
 ) -> str:
-    if authentication:
-        return await _retrieve_auth_header(authentication)
+    if api_key:
+        return await _retrieve_auth_header(api_key)
     return ""
 
 
@@ -52,8 +53,9 @@ async def _retrieve_current_user(
         raise await http_exc_403_forbidden_request() from value_error
 
     try:
-        account_retriever = CurrentAccountInRead(username=username, email=pydantic.EmailStr(email))
-        return await account_crud.read_account_by_username_and_email(account_retriever=account_retriever)
+        return await account_crud.read_account_by_username_and_email(
+            account_retriever=CurrentAccountInRead(username=username, email=pydantic.EmailStr(email))
+        )
 
     except EntityDoesNotExist as value_error:
         raise await http_exc_403_forbidden_request() from value_error

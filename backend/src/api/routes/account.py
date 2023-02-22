@@ -8,6 +8,7 @@ from src.repository.crud.account import AccountCRUDRepository
 from src.security.authorizations.jwt import jwt_manager
 from src.utility.exceptions.custom import EntityDoesNotExist
 from src.utility.exceptions.http.exc_400 import http_exc_400_bad_request
+from src.utility.exceptions.http.exc_403 import http_exc_403_forbidden_request
 from src.utility.exceptions.http.exc_404 import http_exc_404_id_not_found_request
 
 router = fastapi.APIRouter(prefix="/accounts", tags=["accounts"])
@@ -45,7 +46,7 @@ async def retrieve_current_account(
     id: int, current_account: Account = fastapi.Depends(get_auth_current_user())
 ) -> AccountInResponse:
     if id != current_account.id:
-        raise await http_exc_404_id_not_found_request(id=id)
+        raise await http_exc_403_forbidden_request()
 
     jwt_token = jwt_manager.generate_jwt(account=current_account)
     return AccountInResponse(
@@ -68,7 +69,7 @@ async def edit_current_user(
     account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
 ) -> AccountInResponse:
     if id != current_account.id:
-        raise await http_exc_404_id_not_found_request(id=id)
+        raise await http_exc_403_forbidden_request()
 
     if (account_update.username and account_update.username != current_account.username) or (
         account_update.email and account_update.email != current_account.email
@@ -98,7 +99,7 @@ async def remove_current_account(
     account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
 ) -> AccountInDeletionResponse:
     if id != current_account.id:
-        raise await http_exc_404_id_not_found_request(id=id)
+        raise await http_exc_403_forbidden_request()
 
     is_account_deleted = await account_crud.delete_account_by_id(id=id)
     return AccountInDeletionResponse(is_deleted=is_account_deleted)
