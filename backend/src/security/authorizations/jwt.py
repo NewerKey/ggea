@@ -25,16 +25,16 @@ class JWTManager:
         if expiry_delta:
             expired_at = json.dumps(obj=datetime.datetime.utcnow() + expiry_delta, default=str)
         else:
-            expired_at = json.dumps(obj=datetime.datetime.utcnow() + datetime.timedelta(minutes=settings.JWT_MIN), default=str)
+            expired_at = json.dumps(
+                obj=datetime.datetime.utcnow() + datetime.timedelta(minutes=settings.JWT_MIN), default=str
+            )
 
-        to_encode.update(
-            JWToken(expired_at=expired_at, subject=settings.JWT_SUBJECT).dict()
-        )
+        to_encode.update(JWToken(expired_at=expired_at, subject=settings.JWT_SUBJECT).dict())
         return jose_jwt.encode(claims=to_encode, key=settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
     def generate_jwt(self, account: Account) -> str:
         if not account:
-            raise EntityDoesNotExist(f"Cannot generate JWT token for a non-existing Account entity!")
+            raise EntityDoesNotExist(f"Invalid account! JWT Token generation rejected!")
 
         return self._generate_token(
             jwt_data=JWTAccount(username=account.username, email=account.email).dict(),
