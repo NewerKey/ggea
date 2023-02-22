@@ -23,13 +23,13 @@ class JWTManager:
         to_encode = jwt_data.copy()
 
         if expiry_delta:
-            expired_at = datetime.datetime.utcnow() + expiry_delta
-
+            expired_at = json.dumps(obj=datetime.datetime.utcnow() + expiry_delta, default=str)
         else:
-            expired_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=settings.JWT_MIN)
-        expired_at = json.dumps(obj=expired_at, default=str)  # type: ignore
-        jwt_obj = JWToken(expired_at=expired_at, subject=settings.JWT_SUBJECT).dict()
-        to_encode.update(jwt_obj)
+            expired_at = json.dumps(obj=datetime.datetime.utcnow() + datetime.timedelta(minutes=settings.JWT_MIN), default=str)
+
+        to_encode.update(
+            JWToken(expired_at=expired_at, subject=settings.JWT_SUBJECT).dict()
+        )
         return jose_jwt.encode(claims=to_encode, key=settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
     def generate_jwt(self, account: Account) -> str:
