@@ -20,7 +20,7 @@ class TestJWTManager(unittest.TestCase):
         assert isinstance(jwt_token, str)
 
         parsed_payload = jose_jwt.decode(
-            token=jwt_token, key=settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+            token=jwt_token, key=settings.JWT_SECRET_KEY.get_secret_value(), algorithms=[settings.JWT_ALGORITHM]
         )
 
         assert parsed_payload["username"] == "testaccount"
