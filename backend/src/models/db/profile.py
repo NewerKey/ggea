@@ -8,10 +8,10 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.sql import functions as sqlalchemy_functions
 
-from src.models.db.base import BaseTable
+from src.models.db.base import DBBaseTable
 
 
-class Profile(BaseTable):
+class Profile(DBBaseTable):
     __tablename__ = "profile"
 
     id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(primary_key=True, autoincrement="auto")

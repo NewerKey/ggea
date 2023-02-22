@@ -5,11 +5,11 @@ import sqlalchemy
 from sqlalchemy.orm import Mapped as SQLAlchemyMapped, mapped_column as sqlalchemy_mapped_column
 from sqlalchemy.sql import functions as sqlalchemy_functions
 
-from src.models.db.base import BaseTable
+from src.models.db.base import DBBaseTable
 from src.security.authentication.password import pwd_manager
 
 
-class Account(BaseTable):
+class Account(DBBaseTable):
     __tablename__ = "account"
 
     id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(primary_key=True, autoincrement="auto")
