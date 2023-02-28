@@ -10,7 +10,6 @@ from sqlalchemy.sql import functions as sqlalchemy_functions
 
 from src.models.db.base import DBBaseTable
 
-
 class Profile(DBBaseTable):
     __tablename__ = "profile"
 
@@ -29,8 +28,5 @@ class Profile(DBBaseTable):
         server_onupdate=sqlalchemy.schema.FetchedValue(for_update=True),
         default=None,
     )
-
-
-# TODO: one-to-one relationship between Account and Profil
-# account_id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.ForeignKey("account.id"), unique=True)
-# account = sqlalchemy_relationship("Account", back_populates="profile")
+    account_id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.ForeignKey("account.id"), unique=True)
+    account = sqlalchemy_relationship("Account", back_populates="profile")
