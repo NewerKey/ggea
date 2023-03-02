@@ -33,7 +33,7 @@ class ProfileCRUDRepository(BaseCRUDRepository):
     async def read_profiles(self) -> typing.Sequence[Profile]:
         stmt = sqlalchemy.select(Profile)
         query = await self.async_session.execute(statement=stmt)
-        return query.scalars.all()
+        return query.scalars().all()
 
     async def read_profile_by_id(self, id: int) -> Profile:
         try:
@@ -79,18 +79,10 @@ class ProfileCRUDRepository(BaseCRUDRepository):
 
     async def update_profile_by_id(self, id: int, profile_update: ProfileInUpdate) -> Profile:
         new_profile_data = profile_update.dict()
-
-        try:
-            stmt = sqlalchemy.select(Profile).where(Profile.id == id)
-            query = self.async_session.execute(statement=stmt)
-            current_profile = query.scalar()
-        except DatabaseError as e:
-            loguru.logger.error("Error in update_profile_by_id() while querying for profile: %s", e)
-            # TODO: Returning custom error message to client # type: ignore
-            raise e
+        current_profile = await self.read_profile_by_id(id)
 
         if not current_profile:
-            raise EntityDoesNotExist(f"Profile with id '{id}' does not exists!")
+            raise EntityDoesNotExist(f"Profile with id '{id}' does not exist!")  # type: ignore
 
         update_stmt = (
             sqlalchemy.update(table=Profile)
