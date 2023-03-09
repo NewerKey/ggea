@@ -1,5 +1,5 @@
 {
-    "extends": [
-        "prettier"
-    ]
+    "rules": {
+        "semi": "warn"
+    }
 }
