@@ -1,17 +1,17 @@
 #!/bin/bash
 
-echo "Postgres Test Server --- Connecting . . ."
+echo "Backend <> Postgres Test Server Connection --- Starting . . ."
 
 while ! nc -z ggea_postgres_test_server 5432; do
 
-    echo "Postgres Test Server -- Failed!"
+    echo "Backend <> Postgres Test Server Connection -- Failed!"
 
     sleep 1
 
-    echo "Postgres Test Server -- Reconnecting . . ."
+    echo "Backend <> Postgres Test Server Connection -- Restarting . . ."
 
 done
 
-echo "Postgres Test Server --- Successfully Connected!"
+echo "Backend <> Postgres Test Server Connection --- Successfully Established!"
 
 exec "$@"

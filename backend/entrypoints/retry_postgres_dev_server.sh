@@ -1,17 +1,17 @@
 #!/bin/bash
 
-echo " Postgres Development Server --- Connecting . . ."
+echo "Backend <> Postgres Development Server Connection --- Starting . . ."
 
 while ! nc -z ggea_postgres_dev_server 5432; do
 
-    echo " Postgres Development Server -- Failed!"
+    echo "Backend <> Postgres Development Server Connection -- Failed!"
 
     sleep 1
 
-    echo " Postgres Development Server -- Reconnecting . . ."
+    echo "Backend <> Postgres Development Server Connection -- Restarting . . ."
 
 done
 
-echo " Postgres Development Server --- Successfully Connected!"
+echo "Backend <> Postgres Development Server Connection --- Successfully Established!"
 
 exec "$@"
