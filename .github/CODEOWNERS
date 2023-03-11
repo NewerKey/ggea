@@ -2,17 +2,17 @@
 *.py @Aeternalis-Ingenium @JosefLeinweber
 
 # Java Script related code
-*.js @kirill967
-*.jsx @kirill967
-*.rc @kirill967
-*.tsx @kirill967
-*.ts @kirill967
-*.cjs @kirill967
+*.js @kirill967 @j9magayanes @Aeternalis-Ingenium
+*.jsx @kirill967 @j9magayanes
+*.rc @kirill967 @j9magayanes
+*.tsx @kirill967 @j9magayanes
+*.ts @kirill967 @j9magayanes
+*.cjs @kirill967 @j9magayanes
 
 # HTML & CSS related code
-*.html @kirill967
-*.css @kirill967
-*.scss @kirill967
+*.html @kirill967 @j9magayanes
+*.css @kirill967 @j9magayanes
+*.scss @kirill967 @j9magayanes
 
 # JSON related code
 *.json @Aeternalis-Ingenium

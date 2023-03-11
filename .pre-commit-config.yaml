@@ -33,14 +33,8 @@ repos:
         name: isort (python)
         args:
         - --settings-path=backend/pyproject.toml
--   repo: https://github.com/codespell-project/codespell
-    rev: v2.2.2
-    hooks:
-    -   id: codespell
-        additional_dependencies:
-        - tomli
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.0.1"
+    rev: "v1.1.1"
     hooks:
     -   id: mypy
         args:
@@ -51,9 +45,3 @@ repos:
     - id: prettier
       files: \.[jt]sx?$
       types_or: [css, javascript]
--   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: "v8.35.0"
-    hooks:
-    -   id: eslint
-        files: \.[jt]sx?$  # *.js, *.jsx, *.ts and *.tsx
-        types: [file]

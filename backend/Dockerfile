@@ -26,7 +26,6 @@ RUN pip install --upgrade pip
 COPY ./requirements.txt ./
 RUN pip3 install -r requirements.txt
 
-
 # Copy all files
 COPY . .
 
@@ -39,4 +38,4 @@ RUN chmod +x /usr/backend/entrypoints/retry_postgres_test_server.sh
 ENTRYPOINT [ "/usr/backend/entrypoints/retry_postgres_dev_server.sh", "/usr/backend/entrypoints/retry_postgres_test_server.sh" ]
 
 # Start up the backend server
-CMD uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+CMD [ "uvicorn", "src.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000" ]
