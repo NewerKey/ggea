@@ -21,6 +21,7 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             self.async_session.add(instance=new_profile)
             await self.async_session.commit()
             await self.async_session.refresh(instance=new_profile)
+            await self.async_session.close()
             return new_profile
         except DatabaseError as e:
             loguru.logger.error("Error in create_profile(): %s", e)
@@ -38,6 +39,22 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             query = await self.async_session.execute(statement=stmt)
 
             if not query:
+                raise EntityDoesNotExist
+
+            return query.scalar()
+        except DatabaseError as e:
+            loguru.logger.error("Error in read_profile_by_id(): %s", e)
+            # TODO: Returning custom error message to client
+            raise e
+
+    async def read_profile_by_account_id(self, account_id: int) -> Profile:
+        try:
+            loguru.logger.info("Trying to read profile by account id: %s", account_id)
+            stmt = sqlalchemy.select(Profile).where(Profile.account_id == account_id)
+            query = await self.async_session.execute(statement=stmt)
+
+            if not query:
+                loguru.logger.error("Failed to read profile by account id: %s", account_id)
                 raise EntityDoesNotExist
 
             return query.scalar()
@@ -75,7 +92,7 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             raise e
 
     async def update_profile_by_id(self, id: int, profile_update: ProfileInUpdate) -> Profile:
-        new_profile_data = profile_update.dict()
+        new_profile_data = profile_update.dict(exclude_unset=True)
         current_profile = await self.read_profile_by_id(id)
 
         if not current_profile:

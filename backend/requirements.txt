@@ -33,3 +33,4 @@ SQLAlchemy
 tensorflow
 trio
 uvicorn
+password_strength

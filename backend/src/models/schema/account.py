@@ -1,6 +1,8 @@
 import datetime
 
+import loguru
 import pydantic
+from password_strength import PasswordPolicy
 
 from src.models.schema.base import BaseSchemaModel
 
@@ -9,6 +11,19 @@ class AccountInSignup(BaseSchemaModel):
     username: str
     email: pydantic.EmailStr
     password: str
+
+    @pydantic.validator("password")
+    def password_strength(cls, v):
+        loguru.logger.info("Evaluating password strength")
+        policy = PasswordPolicy.from_names(
+            length=8,
+            uppercase=1,
+            numbers=1,
+            special=1,
+        )
+        if policy.test(v) != []:
+            raise ValueError("Password is not strong enough")
+        return v
 
 
 class AccountInSignin(BaseSchemaModel):

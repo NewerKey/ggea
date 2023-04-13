@@ -11,7 +11,7 @@ from src.security.authorizations.jwt import jwt_manager
 class TestJWTManager(unittest.TestCase):
     def setUp(self) -> None:
         self.account = AccountInSignup(
-            username="testaccount", email=pydantic.EmailStr("testaccount@unittest.com"), password="test-password"
+            username="testaccount", email=pydantic.EmailStr("testaccount@unittest.com"), password="TestPassword!1"
         )
 
     async def test_generate_jwt_token(self):

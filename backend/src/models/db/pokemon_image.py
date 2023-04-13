@@ -11,20 +11,23 @@ from sqlalchemy.sql import functions as sqlalchemy_functions
 from src.models.db.base import DBBaseTable
 
 
-class Profile(DBBaseTable):
-    __tablename__ = "profile"
+class PokemonImage(DBBaseTable):
+    __tablename__ = "pokemon_image"
 
     id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(primary_key=True, autoincrement="auto")
-    first_name: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
-        sqlalchemy.String(length=64), nullable=True, default=None
+    file_name: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
+        sqlalchemy.String(length=124), nullable=False, default=None
     )
-    last_name: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
-        sqlalchemy.String(length=64), nullable=True, default=None
+    name: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=124), nullable=False, default=None)
+    nickname: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
+        sqlalchemy.String(length=124), nullable=False, default=name
     )
-    photo: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=248), nullable=True, default=None)
-    win: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer(), nullable=False, default=0)
+    correct_predicted: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(
+        sqlalchemy.Integer(), nullable=False, default=0
+    )
+    wrong_predicted: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer(), nullable=False, default=0)
     loss: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer(), nullable=False, default=0)
-    mmr: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer(), nullable=False, default=80)
+    win: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer(), nullable=False, default=0)
     created_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
         sqlalchemy.DateTime(timezone=True), nullable=False, server_default=sqlalchemy_functions.now()
     )
@@ -34,9 +37,7 @@ class Profile(DBBaseTable):
         server_onupdate=sqlalchemy.schema.FetchedValue(for_update=True),
         default=None,
     )
-    account_id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.ForeignKey("account.id"), unique=True)
-    account = sqlalchemy_relationship("Account", back_populates="profile")
-
-    pokemon_images = sqlalchemy_relationship("PokemonImage", back_populates="profile")
+    profile_id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.ForeignKey("profile.id"))
+    profile = sqlalchemy_relationship("Profile", back_populates="pokemon_images")
 
     __mapper_args__ = {"eager_defaults": True}
