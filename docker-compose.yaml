@@ -148,7 +148,8 @@ services:
       - AWS_S3_TF_MODEL_DIR=${AWS_S3_TF_MODEL_DIR}
       - AWS_S3_PT_MODEL_DIR=${AWS_S3_PT_MODEL_DIR}
     volumes:
-      - ./backend/:/usr/backend/
+      - ./backend/src/:/usr/backend/src/
+      - ./backend/test:/usr/backend/test/
     expose:
       - 8000
     ports:

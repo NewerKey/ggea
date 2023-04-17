@@ -51,6 +51,8 @@ class Settings(pydantic.BaseSettings):
     JWT_DAY: int = decouple.config("JWT_DAY", cast=int)  # type: ignore
     JWT_ACCESS_TOKEN_EXPIRATION_TIME: int = JWT_MIN * JWT_HOUR * JWT_DAY
 
+    OAUTH2_TOKEN_URL: str = decouple.config("OAUTH2_TOKEN_URL", cast=str)  # type: ignore
+
     IS_ALLOWED_CREDENTIALS: bool = decouple.config("IS_ALLOWED_CREDENTIALS", cast=bool)  # type: ignore
     ALLOWED_ORIGINS: list[str] = [
         decouple.config("ALLOWED_ORIGIN_FRONTEND_LOCALHOST_DEFAULT", cast=str),  # type: ignore

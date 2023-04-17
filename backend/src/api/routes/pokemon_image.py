@@ -3,15 +3,26 @@ import typing
 import fastapi
 import loguru
 import pydantic
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import object_session
 
 from src.api.dependency.crud import get_crud
 from src.api.dependency.header import get_auth_current_user
 from src.models.db.account import Account
+from src.models.schema.account import (
+    AccountInOAuthSignIn,
+    AccountInRead,
+    AccountInSignin,
+    AccountInSignout,
+    AccountInSignup,
+    AccountInUpdate,
+)
+from src.models.schema.base import BaseSchemaModel
 from src.models.schema.pokemon_image import PokemonImageInCreate, PokemonImageInResponse
 from src.repository.crud.account import AccountCRUDRepository
 from src.repository.crud.pokemon_image import PokemonImageCRUDRepository
 from src.repository.crud.profile import ProfileCRUDRepository
+from src.security.authorizations.oauth2 import oauth2_get_current_user
 from src.utility.exceptions.custom import EntityDoesNotExist
 from src.utility.exceptions.database import DatabaseError
 from src.utility.exceptions.http.exc_400 import http_exc_400_bad_request
@@ -66,7 +77,7 @@ async def get_profiles(
 async def upload_pokemon_image(
     pokemon_image_create: PokemonImageInCreate = fastapi.Body(..., embed=True),
     pokemon_image_repo: PokemonImageCRUDRepository = fastapi.Depends(get_crud(repo_type=PokemonImageCRUDRepository)),
-    current_account: Account = fastapi.Depends(get_auth_current_user()),
+    current_account: Account = fastapi.Depends(oauth2_get_current_user),
 ) -> PokemonImageInResponse:
     loguru.logger.info("getting current_profile")
     current_profile = current_account.profile

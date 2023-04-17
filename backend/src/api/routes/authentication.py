@@ -1,7 +1,11 @@
+import typing
+
 import fastapi
 
 from src.api.dependency.crud import get_crud
 from src.models.schema.account import (
+    AccountInOAuthSignIn,
+    AccountInRead,
     AccountInResponse,
     AccountInSignin,
     AccountInSignout,
@@ -89,3 +93,22 @@ async def account_logout_endpoint(
     return AccountInSignoutResponse(
         username=logged_out_account.username, is_logged_out=logged_out_account.is_logged_in
     )
+
+
+@router.post("/token", response_model=typing.Any)
+async def create_token(
+    form_data: fastapi.security.OAuth2PasswordRequestForm = fastapi.Depends(),
+    account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
+) -> typing.Any:
+    account_in_db = await account_repo.signin_oauth_account(
+        AccountInOAuthSignIn(username=form_data.username, password=form_data.password)
+    )
+
+    if not account_in_db:
+        raise await http_exc_400_credentials_bad_signin_request()
+
+    logged_in_account = AccountInRead(**account_in_db.__dict__)
+
+    jwt_token = jwt_manager.generate_jwt(account=logged_in_account)
+
+    return {"access_token": jwt_token, "token_type": "bearer"}

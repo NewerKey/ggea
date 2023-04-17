@@ -26,6 +26,11 @@ class AccountInSignup(BaseSchemaModel):
         return v
 
 
+class AccountInOAuthSignIn(BaseSchemaModel):
+    username: str
+    password: str
+
+
 class AccountInSignin(BaseSchemaModel):
     username: str
     email: pydantic.EmailStr
