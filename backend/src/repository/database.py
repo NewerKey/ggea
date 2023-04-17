@@ -1,3 +1,4 @@
+import ssl
 from functools import lru_cache
 
 import loguru
@@ -27,15 +28,31 @@ class Database:
         self._async_engine: SQLAlchemyAsyncEngine | None = None
         self._async_session: sqlalchemy_async_sessionmaker[SQLAlchemyAsyncSession] | None = None
         self.postgres_uri: pydantic.PostgresDsn = pydantic.PostgresDsn(
-            url=f"{settings.DB_POSTGRES_SCHEMA}://{settings.DB_POSTGRES_USENRAME}:{settings.DB_POSTGRES_PASSWORD}@{settings.DB_POSTGRES_HOST}:{settings.DB_POSTGRES_PORT}/{settings.DB_POSTGRES_NAME}",
+            url=f"{settings.DB_POSTGRES_SCHEMA}://{settings.DB_POSTGRES_USERNAME}:{settings.DB_POSTGRES_PASSWORD}@{settings.DB_POSTGRES_HOST}:{settings.DB_POSTGRES_PORT}/{settings.DB_POSTGRES_NAME}",
             scheme=settings.DB_POSTGRES_SCHEMA,
         )
+        self._ssl_context: ssl.SSLContext | None = None
 
     @property
     def set_async_driver(self) -> pydantic.PostgresDsn | str:
         return (
             self.postgres_uri.replace("postgresql://", "postgresql+asyncpg://") if self.is_async else self.postgres_uri
         )
+
+    @property
+    def ssl_context(self):
+        if self._ssl_context:
+            return self._ssl_context
+        else:
+            self.initialize_ssl_context
+        return self.ssl_context
+
+    @property
+    def initialize_ssl_context(self) -> None:
+        ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        ssl_ctx.load_cert_chain(certfile=settings.CLIENT_CERT_PATH, keyfile=settings.CLIENT_KEY_PATH)
+        ssl_ctx.load_verify_locations(cafile=settings.SERVER_CA_PATH)
+        self._ssl_context = ssl_ctx
 
     @property
     def async_engine(self) -> SQLAlchemyAsyncEngine:
@@ -47,12 +64,15 @@ class Database:
 
     @property
     def initialize_async_engine(self) -> None:
+        ssl_context = self.ssl_context if settings.ENVIRONMENT == "PROD" else None
+
         self._async_engine = create_sqlalchemy_async_engine(
             url=self.set_async_driver,
             echo=settings.IS_DB_ECHO_LOG,
             pool_size=settings.DB_POOL_SIZE,
             max_overflow=settings.DB_POOL_OVERFLOW,
             poolclass=SQLAlchemyQueuePool,
+            connect_args={"ssl": ssl_context},
         )
 
     @property

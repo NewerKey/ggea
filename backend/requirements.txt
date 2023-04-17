@@ -15,6 +15,7 @@ httpx
 isort
 loguru
 mypy
+cloud-sql-python-connector[asyncpg]
 passlib
 pathlib
 pillow
@@ -30,7 +31,8 @@ pytest-cov
 pytest-xdist
 scikit-learn
 SQLAlchemy
-tensorflow
 trio
+tensorflow
 uvicorn
+gunicorn
 password_strength
