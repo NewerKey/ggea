@@ -1,16 +1,3 @@
-default_install_hook_types: [pre-commit]
-default_stages: [commit, push]
-default_language_version:
-  python: python3.10
-ci:
-    autofix_commit_msg: |
-        ci(pre-commit): Autofixing commit msg from pre-commit.com hooks
-    autofix_prs: true
-    autoupdate_branch: ''
-    autoupdate_commit_msg: 'ci(autoupdate): Autoupdating commit msg'
-    autoupdate_schedule: weekly
-    skip: []
-    submodules: false
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0

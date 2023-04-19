@@ -1,5 +1,5 @@
-import uuid
 import typing
+import uuid
 
 import loguru
 import sqlalchemy
@@ -50,15 +50,12 @@ class ProfileCRUDRepository(BaseCRUDRepository):
 
     async def read_profile_by_account_id(self, account_id: int) -> Profile:
         try:
-            loguru.logger.info(
-                "Trying to read profile by account id: %s", account_id)
-            stmt = sqlalchemy.select(Profile).where(
-                Profile.account_id == account_id)
+            loguru.logger.info("Trying to read profile by account id: %s", account_id)
+            stmt = sqlalchemy.select(Profile).where(Profile.account_id == account_id)
             query = await self.async_session.execute(statement=stmt)
 
             if not query:
-                loguru.logger.error(
-                    "Failed to read profile by account id: %s", account_id)
+                loguru.logger.error("Failed to read profile by account id: %s", account_id)
                 raise EntityDoesNotExist
 
             return query.scalar()
@@ -69,8 +66,7 @@ class ProfileCRUDRepository(BaseCRUDRepository):
 
     async def read_profile_by_first_name(self, first_name: str) -> Profile:
         try:
-            stmt = sqlalchemy.select(Profile).where(
-                Profile.first_name == first_name)
+            stmt = sqlalchemy.select(Profile).where(Profile.first_name == first_name)
             query = await self.async_session.execute(statement=stmt)
 
             if not query:
@@ -84,8 +80,7 @@ class ProfileCRUDRepository(BaseCRUDRepository):
 
     async def read_profile_by_last_name(self, last_name: str) -> Profile:
         try:
-            stmt = sqlalchemy.select(Profile).where(
-                Profile.last_name == last_name)
+            stmt = sqlalchemy.select(Profile).where(Profile.last_name == last_name)
             query = await self.async_session.execute(statement=stmt)
 
             if not query:
@@ -102,8 +97,7 @@ class ProfileCRUDRepository(BaseCRUDRepository):
         current_profile = await self.read_profile_by_id(id)
 
         if not current_profile:
-            raise EntityDoesNotExist(
-                f"Profile with id '{id}' does not exist!")  # type: ignore
+            raise EntityDoesNotExist(f"Profile with id '{id}' does not exist!")  # type: ignore
 
         update_stmt = (
             sqlalchemy.update(table=Profile)
@@ -112,12 +106,10 @@ class ProfileCRUDRepository(BaseCRUDRepository):
         )
 
         if new_profile_data["first_name"]:
-            update_stmt = update_stmt.values(
-                first_name=new_profile_data["first_name"])
+            update_stmt = update_stmt.values(first_name=new_profile_data["first_name"])
 
         if new_profile_data["last_name"]:
-            update_stmt = update_stmt.values(
-                last_name=new_profile_data["last_name"])
+            update_stmt = update_stmt.values(last_name=new_profile_data["last_name"])
 
         # if new_profile_data["photo"]:
 
@@ -135,8 +127,7 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             return current_profile
 
         except DatabaseError as e:
-            loguru.logger.error(
-                "Error in update_profile_by_id() while trying to write changes: %s", e)
+            loguru.logger.error("Error in update_profile_by_id() while trying to write changes: %s", e)
             # TODO: Returning custom error message to client
             raise e
 
@@ -146,8 +137,7 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             query = self.async_session.execute(select_stmt)
             delete_profile = query.scalar()
         except DatabaseError as e:
-            loguru.logger.error(
-                "Error in delete_profile_by_id() while querying for profile: %s", e)
+            loguru.logger.error("Error in delete_profile_by_id() while querying for profile: %s", e)
             # TODO: Returning custom error message to client
             raise e
 
@@ -155,8 +145,7 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             raise EntityDoesNotExist(f"Profile with id '{id}' does not exist!")
 
         try:
-            delete_stmt = sqlalchemy.delete(Profile).where(
-                Profile.id == delete_profile.id)
+            delete_stmt = sqlalchemy.delete(Profile).where(Profile.id == delete_profile.id)
 
             await self.async_session.execute(statement=delete_stmt)
             await self.async_session.commit()
@@ -164,7 +153,6 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             return f"Profile with id '{id}' is successfully deleted!"
 
         except DatabaseError as e:
-            loguru.logger.error(
-                "Error in delete_profile_by_id() while executing delete statement: %s", e)
+            loguru.logger.error("Error in delete_profile_by_id() while executing delete statement: %s", e)
             # TODO: Returning custom error message to client
             raise e
