@@ -1,3 +1,5 @@
+import uuid
+
 import datetime
 
 import pydantic
@@ -16,7 +18,7 @@ class ProfileInUpdate(BaseSchemaModel):
 
 
 class ProfileInResponse(BaseSchemaModel):
-    id: int
+    id: uuid.UUID
     first_name: str | None
     last_name: str | None
     photo: str | None

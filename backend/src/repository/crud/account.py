@@ -35,7 +35,8 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return new_account
 
     async def _is_username_available(self, username: str) -> bool:
-        select_stmt = sqlalchemy.select(Account.username).select_from(Account).where(Account.username == username)
+        select_stmt = sqlalchemy.select(Account.username).select_from(
+            Account).where(Account.username == username)
         query = await self.async_session.execute(select_stmt)
         db_username = query.scalar()
         if db_username:
@@ -43,7 +44,8 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return True
 
     async def _is_email_available(self, email: str) -> bool:
-        select_stmt = sqlalchemy.select(Account.email).select_from(Account).where(Account.email == email)
+        select_stmt = sqlalchemy.select(Account.email).select_from(
+            Account).where(Account.email == email)
         query = await self.async_session.execute(select_stmt)
         db_email = query.scalar()
         if db_email:
@@ -66,7 +68,8 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return True
 
     async def read_accounts(self) -> Accounts:
-        select_stmt = sqlalchemy.select(Account).options(sqlalchemy_selectinload("*"))
+        select_stmt = sqlalchemy.select(Account).options(
+            sqlalchemy_selectinload("*"))
         query = await self.async_session.execute(statement=select_stmt)
         return query.scalars().all()
 
@@ -78,17 +81,20 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return query.scalar()  # type: ignore
 
     async def _read_account_by_username(self, username: str) -> Account:
-        select_stmt = sqlalchemy.select(Account).where(Account.username == username)
+        select_stmt = sqlalchemy.select(Account).where(
+            Account.username == username)
         query = await self.async_session.execute(statement=select_stmt)
         if not query:
-            raise EntityDoesNotExist(f"Account with username `{username}` does not exist!")
+            raise EntityDoesNotExist(
+                f"Account with username `{username}` does not exist!")
         return query.scalar()  # type: ignore
 
     async def _read_account_by_email(self, email: pydantic.EmailStr) -> Account:
         select_stmt = sqlalchemy.select(Account).where(Account.email == email)
         query = await self.async_session.execute(statement=select_stmt)
         if not query:
-            raise EntityDoesNotExist(f"Account with email `{email}` does not exist!")
+            raise EntityDoesNotExist(
+                f"Account with email `{email}` does not exist!")
         return query.scalar()  # type: ignore
 
     async def read_account_by_username_and_email(self, account_retriever: AccountRetriever) -> Account:
@@ -123,9 +129,47 @@ class AccountCRUDRepository(BaseCRUDRepository):
         db_account = await self._read_account_by_id(id=id)
 
         if not db_account:
-            raise EntityDoesNotExist(f"Account with id `{id}` does not exist!")  # type: ignore
+            raise EntityDoesNotExist(
+                f"Account with id `{id}` does not exist!")  # type: ignore
 
-        update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(updated_at=sqlalchemy_functions.now())  # type: ignore
+        update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(
+            updated_at=sqlalchemy_functions.now())  # type: ignore
+
+        if update_data["username"]:
+            update_stmt = update_stmt.values(username=update_data["username"])
+        if update_data["email"]:
+            update_stmt = update_stmt.values(email=update_data["email"])
+        if update_data["password"]:
+            salt, password = db_account.set_password(
+                password=update_data["password"])
+            update_stmt = update_stmt.values(
+                hashed_salt=salt, hashed_password=password)
+
+        await self.async_session.execute(statement=update_stmt)
+        await self.async_session.commit()
+        await self.async_session.refresh(instance=db_account)
+        return db_account
+
+    async def update_account_by_username(self, username: str, account_update: AccountInUpdate) -> Account:
+        update_data = account_update.dict(exclude_unset=True)
+        db_account = await self._read_account_by_username(username=username)
+
+        if not db_account:
+            raise EntityDoesNotExist(
+                f"Account with username `{username}` does not exist!")  # type: ignore
+
+        update_stmt = sqlalchemy.update(table=Account).where(Account.username == db_account.username).values(
+            updated_at=sqlalchemy_functions.now())  # type: ignore
+
+        if update_data["username"]:
+            update_stmt = update_stmt.values(username=update_data["username"])
+        if update_data["email"]:
+            update_stmt = update_stmt.values(email=update_data["email"])
+        if update_data["password"]:
+            salt, password = db_account.set_password(
+                password=update_data["password"])
+            update_stmt = update_stmt.values(
+                hashed_salt=salt, hashed_password=password)
 
         for key, value in update_data.items():
             update_stmt = update_stmt.values(**{key: value})
@@ -190,7 +234,21 @@ class AccountCRUDRepository(BaseCRUDRepository):
         if not db_account:
             raise EntityDoesNotExist(f"Account with id `{id}` does not exist!")
 
-        delete_stmt = sqlalchemy.delete(table=Account).where(Account.id == db_account.id)
+        delete_stmt = sqlalchemy.delete(
+            table=Account).where(Account.id == db_account.id)
+        await self.async_session.execute(statement=delete_stmt)
+        await self.async_session.commit()
+        return True
+
+    async def delete_account_by_username(self, username: str) -> bool:
+        db_account = await self._read_account_by_username(username=username)
+
+        if not db_account:
+            raise EntityDoesNotExist(
+                f"Account with username `{username}` does not exist!")
+
+        delete_stmt = sqlalchemy.delete(
+            table=Account).where(Account.username == db_account.username)
         await self.async_session.execute(statement=delete_stmt)
         await self.async_session.commit()
         return True
@@ -202,9 +260,11 @@ class AccountCRUDRepository(BaseCRUDRepository):
             raise EntityDoesNotExist("Wrong username or wrong email!")
 
         if not db_account.is_password_verified(password=account_signin.password):
-            raise PasswordDoesNotMatch("Password does not match! Please try again.")
+            raise PasswordDoesNotMatch(
+                "Password does not match! Please try again.")
 
-        update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=True)
+        update_stmt = sqlalchemy.update(table=Account).where(
+            Account.id == db_account.id).values(is_logged_in=True)
         await self.async_session.execute(statement=update_stmt)
         await self.async_session.commit()
         await self.async_session.refresh(instance=db_account)
@@ -215,12 +275,15 @@ class AccountCRUDRepository(BaseCRUDRepository):
         db_account = await self._read_account_by_username(username=account_signin.username)
 
         if not db_account:
-            raise EntityDoesNotExist(f"Wrong wrong username!\n No user with {account_signin.username}")
+            raise EntityDoesNotExist(
+                f"Wrong wrong username!\n No user with {account_signin.username}")
 
         if not db_account.is_password_verified(password=account_signin.password):
-            raise PasswordDoesNotMatch("Password does not match! Please try again.")
+            raise PasswordDoesNotMatch(
+                "Password does not match! Please try again.")
 
-        update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=True)
+        update_stmt = sqlalchemy.update(table=Account).where(
+            Account.id == db_account.id).values(is_logged_in=True)
         await self.async_session.execute(statement=update_stmt)
         await self.async_session.commit()
         await self.async_session.refresh(instance=db_account)
@@ -229,7 +292,8 @@ class AccountCRUDRepository(BaseCRUDRepository):
 
     async def signout_account(self, account_signout: AccountInSignout) -> Account:
         db_account = await self._read_account_by_id(id=account_signout.id)
-        update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=False)
+        update_stmt = sqlalchemy.update(table=Account).where(
+            Account.id == db_account.id).values(is_logged_in=False)
         await self.async_session.execute(statement=update_stmt)
         await self.async_session.commit()
         await self.async_session.refresh(instance=db_account)

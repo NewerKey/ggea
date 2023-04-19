@@ -1,3 +1,5 @@
+import uuid
+
 import datetime
 
 import loguru
@@ -38,11 +40,11 @@ class AccountInSignin(BaseSchemaModel):
 
 
 class AccountInSignout(BaseSchemaModel):
-    id: int
+    id: uuid.UUID
 
 
 class AccountInRead(BaseSchemaModel):
-    id: int | None
+    id: uuid.UUID | None
     username: str | None
     email: pydantic.EmailStr | None
 
@@ -59,7 +61,7 @@ class AccountInUpdate(BaseSchemaModel):
 
 
 class AccountWithToken(BaseSchemaModel):
-    id: int
+    id: uuid.UUID
     token: str
     username: str
     email: pydantic.EmailStr

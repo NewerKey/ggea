@@ -1,3 +1,5 @@
+import uuid
+
 import datetime
 
 import pydantic
@@ -21,7 +23,7 @@ class PokemonImageInCreate(BaseSchemaModel):
 
 
 class PokemonImageInResponse(BaseSchemaModel):
-    id: int
+    id: uuid.UUID
     file_name: str
     name: str
     nickname: str
@@ -31,4 +33,4 @@ class PokemonImageInResponse(BaseSchemaModel):
     loss: int
     created_at: datetime.datetime
     updated_at: datetime.datetime | None
-    profile_id: int | None
+    profile_id: uuid.UUID | None
