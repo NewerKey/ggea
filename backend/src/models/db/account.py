@@ -28,6 +28,13 @@ class Account(DBBaseTable):
     is_admin: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=False)
     is_logged_in: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=True)
     is_verified: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=False)
+
+    is_otp_enabled: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=False)
+    is_otp_verified: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=False)
+
+    otp_secret: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=64), nullable=True)
+    otp_auth_url: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=256), nullable=True)
+
     created_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
         sqlalchemy.DateTime(timezone=True), nullable=False, server_default=sqlalchemy_functions.now()
     )

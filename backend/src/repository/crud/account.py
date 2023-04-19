@@ -1,5 +1,6 @@
 import typing
 
+import fastapi
 import pydantic
 import sqlalchemy
 from sqlalchemy.orm import selectinload as sqlalchemy_selectinload
@@ -126,14 +127,58 @@ class AccountCRUDRepository(BaseCRUDRepository):
 
         update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(updated_at=sqlalchemy_functions.now())  # type: ignore
 
-        if update_data["username"]:
-            update_stmt = update_stmt.values(username=update_data["username"])
-        if update_data["email"]:
-            update_stmt = update_stmt.values(email=update_data["email"])
-        if update_data["password"]:
-            salt, password = db_account.set_password(password=update_data["password"])
-            update_stmt = update_stmt.values(hashed_salt=salt, hashed_password=password)
+        for key, value in update_data.items():
+            update_stmt = update_stmt.values(**{key: value})
 
+        try:
+            await self.async_session.execute(statement=update_stmt)
+            await self.async_session.commit()
+            await self.async_session.refresh(instance=db_account)
+            return db_account
+        except sqlalchemy.exc.DataError as e:
+            raise fastapi.HTTPException(status_code=400, detail=str(e))
+
+    async def update_account(self, id: int, update_data: dict) -> Account:
+        db_account = await self._read_account_by_id(id=id)
+
+        if not db_account:
+            raise EntityDoesNotExist(f"Account with id `{id}` does not exist!")
+
+        update_stmt = (
+            sqlalchemy.update(table=Account)
+            .where(Account.id == db_account.id)
+            .values(updated_at=sqlalchemy_functions.now())
+        )
+
+        for key, value in update_data.items():
+            update_stmt = update_stmt.values(**{key: value})
+
+        try:
+            await self.async_session.execute(statement=update_stmt)
+            await self.async_session.commit()
+            await self.async_session.refresh(instance=db_account)
+            return db_account
+
+        except sqlalchemy.exc.DataError as e:
+            raise fastapi.HTTPException(status_code=500, detail=str(e))
+
+    async def set_otp_details(self, account: Account, otp_secret: str, otp_auth_url: str) -> Account:
+        db_account = await self._read_account_by_id(id=account.id)
+
+        if not db_account:
+            raise EntityDoesNotExist(f"Account with id `{id}` does not exist!")  # type: ignore
+
+        update_stmt = (
+            sqlalchemy.update(table=Account)
+            .where(Account.id == db_account.id)
+            .values(
+                otp_secret=otp_secret,
+                otp_auth_url=otp_auth_url,
+                is_otp_enabled=True,
+                is_otp_verified=True,
+                updated_at=sqlalchemy_functions.now(),
+            )
+        )
         await self.async_session.execute(statement=update_stmt)
         await self.async_session.commit()
         await self.async_session.refresh(instance=db_account)
@@ -189,3 +234,11 @@ class AccountCRUDRepository(BaseCRUDRepository):
         await self.async_session.commit()
         await self.async_session.refresh(instance=db_account)
         return db_account
+
+    async def is_otp_enabled(self, username: str) -> bool:
+        db_account = await self._read_account_by_username(username=username)
+
+        if not db_account:
+            raise EntityDoesNotExist(f"Account with username `{username}` does not exist!")
+
+        return db_account.is_otp_enabled

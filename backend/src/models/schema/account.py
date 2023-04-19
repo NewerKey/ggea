@@ -67,6 +67,10 @@ class AccountWithToken(BaseSchemaModel):
     is_verified: bool
     is_logged_in: bool
     is_admin: bool
+    is_otp_enabled: bool
+    is_otp_verified: bool
+    otp_secret: str | None
+    otp_auth_url: str | None
     created_at: datetime.datetime
     updated_at: datetime.datetime | None
 

@@ -32,7 +32,7 @@ pytest-xdist
 scikit-learn
 SQLAlchemy
 trio
-tensorflow
 uvicorn
 gunicorn
 password_strength
+pyotp
