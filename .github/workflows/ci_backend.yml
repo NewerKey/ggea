@@ -1,0 +1,155 @@
+name: 'CI - Backend'
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'feature/backend/*'
+      - 'fix/backend/*'
+  pull_request:
+    branches:
+      - 'feature/backend/*'
+      - 'fix/backend/*'
+
+jobs:
+  build:
+    name: 'Backend: Build'
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - '3.11'
+    defaults:
+      run:
+        working-directory: backend
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v3
+      - name: 'Set up Python ${{ matrix.python-version }}'
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      - name: 'Install dependencies'
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+  code-quality:
+    name: 'Backend: Code quality'
+    needs: build
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - '3.11'
+    defaults:
+      run:
+        working-directory: backend
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v3
+      - name: 'Set up Python ${{ matrix.python-version }}'
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      - name: 'Install dependencies'
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: 'Run code quality checks'
+        run: |
+          pip install "flake8" "black" "isort" "mypy" "pylint" "pydcodestyle"
+      - name: 'Lint with Black'
+        with:
+          options: 'exclude=test_.*'
+        run: |
+          black --check .
+      - name: 'Lint with flake8'
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: 'Lint with isort'
+        run: |
+          isort --check-only --profile black .
+      - name: 'Lint with mypy'
+        run: |
+          mypy . --pretty
+
+  tests:
+    name: 'Backend: Tests'
+    needs: build
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - '3.11'
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    ### add env variables
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v3
+      - name: 'Set up Python ${{ matrix.python-version }}'
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      - name: 'Install dependencies'
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: 'Install dependencies for tests'
+        run: |
+          pip install pytest pytest-asysncio pytest-xdist pytest-cov
+      - name: 'Run tests'
+        run: |
+          pytest --cov --cov-report=xml .
+
+  docker-build:
+    name: 'Backend: Docker build'
+    needs: [test, code-quality]
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      IMAGE: docker.pkg.github.com/${{ echo github.repository }} | tr '[A-Z]' '[a-z]'/backend
+
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v3
+      - name: 'Login to GitHub Container Registry'
+        run: echo ${GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin docker.pkg.github.com
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 'Pull Image'
+        run: docker pull ${{ env.IMAGE }}:latest || true
+      - name: 'Build Image'
+        run: docker build \
+          --cache-from ${{ env.IMAGE }}:latest\
+          --tag ${{ env.IMAGE }}:latest . \
+          --file ./backend/Dockerfile.production \
+          "./backend"
+      - name: 'Push Image'
+        run: docker push ${{ env.IMAGE }}:latest
