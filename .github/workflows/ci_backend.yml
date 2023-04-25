@@ -72,7 +72,7 @@ jobs:
       - name: 'Lint with Black'
         uses: psf/black@stable
         with:
-          options: 'exclude=test_.*'
+          options: '--exclude=tests/'
           src: backend/src/
       - name: 'Lint with isort'
         run: |
