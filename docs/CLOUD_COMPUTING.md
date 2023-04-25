@@ -15,7 +15,7 @@
 
 ### Cloud Infrastructure (Logical Design) 🏗️
 
-![GGEA Image](/Users/newerkey/Projects/GGEA/docs/images/GGEA_Cloud Infrastructure.jpeg)
+![GGEA Image](https://github.com/Aeternalis-Ingenium/GGEA/blob/trunk/docs/images/GGEA_Cloud%20Infrastructure.jpeg)
 
 - [Lucid Chart Share Link](https://lucid.app/lucidchart/invitations/accept/inv_eb7c3f72-06c1-4d4c-a747-282782f436e9)
 
