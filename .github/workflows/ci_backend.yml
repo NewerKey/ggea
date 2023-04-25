@@ -120,7 +120,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: 'Install dependencies for tests'
         run: |
-          pip install pytest pytest-asysncio pytest-xdist pytest-cov
+          pip install pytest pytest-asyncio pytest-xdist pytest-cov
       - name: 'Run tests'
         run: |
           pytest --cov --cov-report=xml .
