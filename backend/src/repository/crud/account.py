@@ -1,4 +1,5 @@
 import typing
+import uuid
 
 import fastapi
 import pydantic
@@ -70,7 +71,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         query = await self.async_session.execute(statement=select_stmt)
         return query.scalars().all()
 
-    async def _read_account_by_id(self, id: int) -> Account:
+    async def _read_account_by_id(self, id: uuid.UUID) -> Account:
         select_stmt = sqlalchemy.select(Account).where(Account.id == id)
         query = await self.async_session.execute(statement=select_stmt)
         if not query:
@@ -108,7 +109,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         db_accounts: list[Account] = list()
 
         if account_read.id:
-            db_account = await self._read_account_by_id(id=account_read.id)
+            db_account = await self._read_account_by_id(id=account_read.id)  # type: ignore
             db_accounts.append(db_account)
         if account_read.email:
             db_account = await self._read_account_by_email(email=account_read.email)
@@ -118,7 +119,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
             db_accounts.append(db_account)
         return set(db_accounts)
 
-    async def update_account_by_id(self, id: int, account_update: AccountInUpdate) -> Account:
+    async def update_account_by_id(self, id: uuid.UUID, account_update: AccountInUpdate) -> Account:
         update_data = account_update.dict(exclude_unset=True)
         db_account = await self._read_account_by_id(id=id)
 
@@ -176,7 +177,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         except sqlalchemy.exc.DataError as e:
             raise fastapi.HTTPException(status_code=400, detail=str(e))
 
-    async def update_account(self, id: int, update_data: dict) -> Account:
+    async def update_account(self, id: uuid.UUID, update_data: dict) -> Account:
         db_account = await self._read_account_by_id(id=id)
 
         if not db_account:
@@ -222,7 +223,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         await self.async_session.refresh(instance=db_account)
         return db_account
 
-    async def delete_account_by_id(self, id: int) -> bool:
+    async def delete_account_by_id(self, id: uuid.UUID) -> bool:
         db_account = await self._read_account_by_id(id=id)
 
         if not db_account:
@@ -277,7 +278,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return db_account
 
     async def signout_account(self, account_signout: AccountInSignout) -> Account:
-        db_account = await self._read_account_by_id(id=account_signout.id)
+        db_account = await self._read_account_by_id(id=account_signout.id)  # type: ignore
         update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=False)
         await self.async_session.execute(statement=update_stmt)
         await self.async_session.commit()

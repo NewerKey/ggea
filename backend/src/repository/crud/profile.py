@@ -92,7 +92,7 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             # TODO: Returning custom error message to client
             raise e
 
-    async def update_profile_by_id(self, id: int, profile_update: ProfileInUpdate) -> Profile:
+    async def update_profile_by_id(self, id: uuid.UUID, profile_update: ProfileInUpdate) -> Profile:
         new_profile_data = profile_update.dict(exclude_unset=True)
         current_profile = await self.read_profile_by_id(id)
 

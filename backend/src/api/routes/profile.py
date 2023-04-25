@@ -1,3 +1,5 @@
+import uuid
+
 import fastapi
 import loguru
 import pydantic
@@ -56,7 +58,7 @@ async def get_profiles(
     status_code=fastapi.status.HTTP_200_OK,
 )
 async def update_profile_by_id(
-    id: int,
+    id: uuid.UUID,
     profile_update: ProfileInUpdate,
     # current_account: Account = fastapi.Depends(get_auth_current_user()),
     profile_repo: ProfileCRUDRepository = fastapi.Depends(get_crud(repo_type=ProfileCRUDRepository)),
