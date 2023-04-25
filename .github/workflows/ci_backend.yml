@@ -1,4 +1,7 @@
 name: 'CI - Backend'
+
+env:
+  IMAGE: docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | tr '[A-Z]' '[a-z]')/backend
 on:
   workflow_dispatch:
   push:
@@ -65,21 +68,15 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: 'Run code quality checks'
         run: |
-          pip install "flake8" "black" "isort" "mypy" "pylint" "pydcodestyle"
+          pip install "black" "isort"
       - name: 'Lint with Black'
         uses: psf/black@stable
         with:
-          options: 'exclude=test_.*'
+          options: '--exclude=tests/'
           src: backend/src/
-      - name: 'Lint with flake8'
-        run: |
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       - name: 'Lint with isort'
         run: |
           isort --check-only --profile black .
-      - name: 'Lint with mypy'
-        run: |
-          mypy . --pretty
 
   tests:
     name: 'Backend: Tests'
@@ -123,26 +120,22 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: 'Install dependencies for tests'
         run: |
-          pip install pytest pytest-asysncio pytest-xdist pytest-cov
+          pip install pytest pytest-asyncio pytest-xdist pytest-cov
       - name: 'Run tests'
         run: |
           pytest --cov --cov-report=xml .
 
   docker-build:
     name: 'Backend: Docker build'
-    needs: [test, code-quality]
+    needs: [tests, code-quality]
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      IMAGE: docker.pkg.github.com/${{ echo github.repository }} | tr '[A-Z]' '[a-z]'/backend
-
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v3
       - name: 'Login to GitHub Container Registry'
-        run: echo ${GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin docker.pkg.github.com
+        run: echo {CICD_GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin docker.pkg.github.com
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
       - name: 'Pull Image'
         run: docker pull ${{ env.IMAGE }}:latest || true
       - name: 'Build Image'

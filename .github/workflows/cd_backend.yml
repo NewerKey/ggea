@@ -1,54 +1,51 @@
-name: 'Backend: Deploy'
+name: 'Backend: Continuous Deployment🚀'
 
 on:
   workflow_dispatch:
-    push:
-      branches:
-        - 'backend/release/**'
-    pull_request:
-      branches:
-        - 'backend/release/**'
+  push:
+    branches:
+      - 'backend/release/**'
+  pull_request:
+    branches:
+      - 'backend/release/**'
+
 jobs:
   deploy:
-    name: 'Deploy to Google Cloud Run'
-    environment: 'production'
+    name: 'Backend Deployment to Heroku 📡'
+    environment: production
     runs-on: ubuntu-latest
     env:
       IMAGE: docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | tr '[A-Z]' '[a-z]')/backend
-      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-      GCP_REGION: ${{ secrets.GCP_REGION }}
-      GCP_SERVICE_NAME: ${{ secrets.GCP_SERVICE_NAME }}
-      GCP_SERVICE_URL: ${{ secrets.GCP_SERVICE_URL }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      HEROKU_APP_NAME: 'ggea-web-api'
+      HEROKU_REGISTRY_IMAGE: registry.heroku.com/${HEROKU_APP_NAME}/backend
+      TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
 
     steps:
-      - name: 'Checkout'
+      - name: Checkout
         uses: actions/checkout@v3
-        with:
-          ref: trunk
-      - name: 'Log in to GitHub Container Registry'
-        run: echo ${GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin ghcr.io
-      - name: 'Pull the latest image'
-        run: docker pull ${IMAGE}:latest || true
-      - name: 'Build the image'
-        run: docker build \
-          --cache-from ${IMAGE}:latest \
-          --tag ${IMAGE}:latest .\
-          --file ./backend/Dockerfile.production \
-          "./backend"
-      - name: 'Login to Google Cloud Container Registry'
-        run: echo ${GCP_SA_KEY} | docker login -u _json_key --password-stdin https://gcr.io
-      - name: 'Push to Registry'
-        run: docker push ${{ env.GCP_REGISTRY_NAME }}
-      - name: 'Set Environment Variables'
+      - name: Log in to GitHub Packages
+        run: echo ${env.TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin docker.pkg.github.com
+      - name: Pull the latest Docker image
         run: |
-          echo "GCP_PROJECT_ID=${GCP_PROJECT_ID}" >> $GITHUB_ENV
-          echo "GCP_SA_KEY=${GCP_SA_KEY}" >> $GITHUB_ENV
-          echo "GCP_REGION=${GCP_REGION}" >> $GITHUB_ENV
-          echo "GCP_SERVICE_NAME=${GCP_SERVICE_NAME}" >> $GITHUB_ENV
-          echo "GCP_SERVICE_URL=${GCP_SERVICE_URL}" >> $GITHUB_ENV
-      - name: 'Release to Google Cloud Run'
+          docker pull ${{ env.IMAGE }}:latest || true
+      - name: Build image
+        run: |
+          docker build \
+            --cache-from ${{ env.IMAGE }}:latest \
+            --tag ${{ env.IMAGE }}:latest \
+            --file ./backend/Dockerfile.production \
+            "./backend"
+      - name: Log in to the Heroku Container Registry
+        run: docker login -u _ -p ${{ secrets.HEROKU_TOKEN }} registry.heroku.com
+      - name: Tag the image
+        run: docker tag ${{ env.IMAGE }}:latest ${{ env.HEROKU_REGISTRY_IMAGE }}
+      - name: Push to the Heroku registry
+        run: docker push ${{ env.HEROKU_REGISTRY_IMAGE }}
+      - name: Set environment variables
+        run: |
+          echo "HEROKU_REGISTRY_IMAGE=${{ env.HEROKU_REGISTRY_IMAGE }}" >> $GITHUB_ENV
+          echo "HEROKU_TOKEN=${{ secrets.HEROKU_TOKEN }}" >> $GITHUB_ENV
+      - name: Release into production
         run: |
           chmod +x ./backend/release.sh
           ./backend/release.sh
