@@ -1,13 +1,9 @@
 name: 'Backend: Continuous Deployment🚀'
 
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - 'backend/release/**'
-  pull_request:
-    branches:
-      - 'backend/release/**'
+env:
+  IMAGE: docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | tr '[A-Z]' '[a-z]')/backend
+
+on: [push, pull_request]
 
 jobs:
   deploy:
@@ -15,20 +11,19 @@ jobs:
     environment: production
     runs-on: ubuntu-latest
     env:
-      IMAGE: docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | tr '[A-Z]' '[a-z]')/backend
       HEROKU_APP_NAME: 'ggea-web-api'
       HEROKU_REGISTRY_IMAGE: registry.heroku.com/${HEROKU_APP_NAME}/backend
-      TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Log in to GitHub Packages
-        run: echo ${env.TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin docker.pkg.github.com
+        run: echo ${TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin docker.pkg.github.com
+        env:
+          TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
       - name: Pull the latest Docker image
         run: |
           docker pull ${{ env.IMAGE }}:latest || true
-      - name: Build image
+      - name: Build production image
         run: |
           docker build \
             --cache-from ${{ env.IMAGE }}:latest \
@@ -47,5 +42,5 @@ jobs:
           echo "HEROKU_TOKEN=${{ secrets.HEROKU_TOKEN }}" >> $GITHUB_ENV
       - name: Release into production
         run: |
-          chmod +x ./backend/release.sh
-          ./backend/release.sh
+          chmod +x ./release.sh
+          ./release.sh

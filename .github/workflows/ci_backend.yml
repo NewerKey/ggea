@@ -92,7 +92,7 @@ jobs:
         working-directory: backend
     services:
       postgres:
-        image: postgres:13
+        image: postgres:14.2-alpine
         env:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -105,7 +105,36 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     ### add env variables
+    env:
+      BACKEND_SERVER_HOST: ${{ secrets.BACKEND_SERVER_HOST }}
+      BACKEND_SERVER_PORT: ${{ secrets.BACKEND_SERVER_PORT }}
+      BACKEND_SERVER_WORKERS: ${{ secrets.BACKEND_SERVER_WORKERS }}
+      IS_ALLOWED_CREDENTIALS: ${{ secrets.IS_ALLOWED_CREDENTIALS }}
+      STATIC_FILE_DIRECTORY: ${{ secrets.STATIC_FILE_DIRECTORY }}
+      POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+      DB_TIMEOUT: ${{ secrets.DB_TIMEOUT }}
+      DB_POOL_SIZE: ${{ secrets.DB_POOL_SIZE }}
+      DB_MAX_POOL_CON: ${{ secrets.DB_MAX_POOL_CON }}
+      DB_POOL_OVERFLOW: ${{ secrets.DB_POOL_OVERFLOW }}
+      IS_DB_ASYNC_DRIVER: ${{ secrets.IS_DB_ASYNC_DRIVER }}
+      IS_DB_ECHO_LOG: ${{ secrets.IS_DB_ECHO_LOG }}
+      IS_DB_EXPIRE_ON_COMMI: ${{ secrets.IS_DB_EXPIRE_ON_COMMI }}
+      IS_DB_FORCE_ROLLBACK: ${{ secrets.IS_DB_FORCE_ROLLBACK }}
+      API_TOKEN: ${{ secrets.API_TOKEN }}
+      AUTH_KEY: ${{ secrets.AUTH_KEY }}
+      OAUTH_TOKEN_URL: ${{ secrets.OAUTH_TOKEN_URL }}
+      POSTGRES_SCHEMA: ${{ secrets.POSTGRES_SCHEMA }}
+      JWT_TOKEN_PREFIX: ${{ secrets.JWT_TOKEN_PREFIX }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      PWD_ALGORITHM_LAYER_1: ${{ secrets.PWD_ALGORITHM_LAYER_1 }}
+      PWD_ALGORITHM_LAYER_2: ${{ secrets.PWD_ALGORITHM_LAYER_2 }}
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      JWT_SUBJECT: ${{ secrets.JWT_SUBJECT }}
+      JWT_MIN: ${{ secrets.JWT_MIN }}
+      JWT_HOUR: ${{ secrets.JWT_HOUR }}
+      JWT_DAY: ${{ secrets.JWT_DAY }}
     runs-on: ${{ matrix.os }}
+
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v3
