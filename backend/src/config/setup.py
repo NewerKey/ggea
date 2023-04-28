@@ -28,6 +28,11 @@ class SettingsFactory:
             from src.config.settings.production import ProductionSettings
 
             return ProductionSettings()
+        
+        elif self.environment == Environment.HEROKU_PRODUCTION.value:
+            from src.config.settings.heroku_production import ProductionSettings
+
+            return ProductionSettings()
         else:
             raise ValueError(f"Invalid environment: {self.environment}")
 
