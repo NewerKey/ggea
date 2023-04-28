@@ -2,8 +2,8 @@
 *.py @Aeternalis-Ingenium @JosefLeinweber
 
 # DevOps related code
-*.yml @NewerKey @JosefLeinweber
-*.yaml @NewerKey @JosefLeinweber
+*.yml @NewerKey 
+*.yaml @NewerKey
 *.tf @NewerKey @JosefLeinweber
 Dockerfile @NewerKey @JosefLeinweber
 Dockerfile.* @NewerKey @JosefLeinweber
