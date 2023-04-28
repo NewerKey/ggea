@@ -1,7 +1,7 @@
 name: 'CI - Backend'
 
 env:
-  IMAGE: docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | tr '[A-Z]' '[a-z]')/backend
+  IMAGE: ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[A-Z]' '[a-z]')/backend
 on:
   workflow_dispatch:
   push:
@@ -181,6 +181,7 @@ jobs:
       TF_MODEL_FILE_EXTENTION_2: ${{ secrets.TF_MODEL_FILE_EXTENTION_2 }}
       PT_MODEL_FILE_EXTENTION_1: ${{ secrets.PYTORCH_MODEL_FILE_EXTENTION_1 }}
       PT_MODEL_FILE_EXTENTION_2: ${{ secrets.PYTORCH_MODEL_FILE_EXTENTION_2 }}
+      POSTGRES_TEST_HOST: ${{ secrets.POSTGRES_TEST_HOST }}
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -210,7 +211,7 @@ jobs:
       - name: 'Checkout repository'
         uses: actions/checkout@v3
       - name: 'Login to GitHub Container Registry'
-        run: echo {CICD_GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin docker.pkg.github.com
+        run: echo {CICD_GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin ghcr.io
         env:
           GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
       - name: 'Pull Image'
