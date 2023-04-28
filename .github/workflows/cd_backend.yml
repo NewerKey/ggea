@@ -1,14 +1,13 @@
 name: 'Backend: Continuous Deployment🚀'
-
 env:
   IMAGE: docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | tr '[A-Z]' '[a-z]')/backend
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   deploy:
     name: 'Backend Deployment to Heroku 📡'
-    environment: production
+    environment: heroku_production
     runs-on: ubuntu-latest
     env:
       HEROKU_APP_NAME: 'ggea-web-api'
