@@ -85,7 +85,7 @@ jobs:
       - name: 'Checkout repository'
         uses: actions/checkout@v3
       - name: 'Login to GitHub Container Registry'
-        run: echo {CICD_GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin ghcr.io
+        run: echo { GITHUB_TOKEN } | docker login -u ${GITHUB_ACTOR} --password-stdin ghcr.io
         env:
           GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
       - name: 'Pull Image'
