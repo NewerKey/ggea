@@ -9,9 +9,9 @@ class HashingFunctionFactory:
     @staticmethod
     def initialize_hashing_function(algorithm: str) -> HashingAlgorithmSubClass:
         if algorithm == AlgorithmTypes.ARGON2:
-            return BCryptAlgorithm()
-        elif algorithm == AlgorithmTypes.BCRYPT:
             return Argon2Algorithm()
+        elif algorithm == AlgorithmTypes.BCRYPT:
+            return BCryptAlgorithm()
         elif algorithm == AlgorithmTypes.SHA256:
             return SHA256Algorithm()
         elif algorithm == AlgorithmTypes.SHA512:
