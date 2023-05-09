@@ -36,6 +36,7 @@ wheels/
 .pnp
 .pnp.js
 .env
+google.env
 env/*
 .DS_Store
 

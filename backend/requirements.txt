@@ -36,3 +36,4 @@ uvicorn
 gunicorn
 password_strength
 pyotp
+slowapi

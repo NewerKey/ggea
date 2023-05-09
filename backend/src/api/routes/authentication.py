@@ -2,6 +2,9 @@ import typing
 
 import fastapi
 import pyotp
+from slowapi import _rate_limit_exceeded_handler, Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from src.api.dependency.crud import get_crud
 from src.models.db.account import Account
@@ -29,6 +32,8 @@ from src.utility.exceptions.http.exc_400 import (
 
 router = fastapi.APIRouter(prefix="/auth", tags=["authentication"])
 
+limiter = Limiter(key_func=get_remote_address)
+
 
 @router.post(
     path="/signup",
@@ -37,6 +42,7 @@ router = fastapi.APIRouter(prefix="/auth", tags=["authentication"])
     status_code=fastapi.status.HTTP_201_CREATED,
 )
 async def account_registration_endpoint(
+    request: fastapi.Request,
     account_signup: AccountInSignup = fastapi.Body(..., embed=True),
     account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
     profile_crud: ProfileCRUDRepository = fastapi.Depends(get_crud(repo_type=ProfileCRUDRepository)),
@@ -63,7 +69,9 @@ async def account_registration_endpoint(
     response_model=AccountInResponse,
     status_code=fastapi.status.HTTP_202_ACCEPTED,
 )
+@limiter.limit("5/120seconds")
 async def account_login_endpoint(
+    request: fastapi.Request,
     account_signin: AccountInSignin = fastapi.Body(..., embed=True),
     account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
 ) -> AccountInResponse:

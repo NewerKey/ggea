@@ -26,7 +26,7 @@ class TestHashingFunction(unittest.TestCase):
             self.argon2_context.is_hash_verified(
                 secret=self.argon2_salt + "fake-password", hashed_secret=account_password
             )
-            is True
+            is False
         )
 
     async def test_hashing_function_with_bcrypt_algorithm(self):

@@ -1,5 +1,7 @@
 from functools import lru_cache
 
+import loguru
+
 from src.config.setup import settings
 from src.utility.design_patterns.factory.hashing import get_hashing_function
 
