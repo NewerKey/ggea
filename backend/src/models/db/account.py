@@ -1,7 +1,6 @@
 import datetime
 import uuid
 
-import loguru
 import pydantic
 import sqlalchemy
 from sqlalchemy.dialects.postgresql import UUID
@@ -70,7 +69,4 @@ class Account(DBBaseTable):
         return pwd_manager.generate_double_layered_password(password=password)
 
     def is_password_verified(self, password: str) -> bool:
-        loguru.logger.info(f"checking password for {self.username}")
-        x = pwd_manager.is_hashed_password_verified(hashed_salt=self.hashed_salt, password=password, hashed_password=self.hashed_password)  # type: ignore
-        loguru.logger.info(f"password check result: {x}")
-        return x
+        return pwd_manager.is_hashed_password_verified(hashed_salt=self.hashed_salt, password=password, hashed_password=self.hashed_password)  # type: ignore

@@ -1,6 +1,5 @@
 import abc
 
-import loguru
 from passlib.context import CryptContext as PasslibCryptContext
 
 from src.config.setup import settings

@@ -2,7 +2,6 @@ import typing
 import uuid
 
 import fastapi
-import loguru
 import pydantic
 import sqlalchemy
 from sqlalchemy.orm import selectinload as sqlalchemy_selectinload
@@ -254,7 +253,6 @@ class AccountCRUDRepository(BaseCRUDRepository):
 
         if not db_account.is_password_verified(password=account_signin.password):
             raise PasswordDoesNotMatch("Password does not match! Please try again.")
-        loguru.logger.info(f"Account {db_account.username} has logged in!")
         update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=True)
         await self.async_session.execute(statement=update_stmt)
         await self.async_session.commit()
