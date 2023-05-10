@@ -80,7 +80,8 @@ class AccountInResponse(BaseSchemaModel):
 
 
 class AccountInSignupResponse(BaseSchemaModel):
-    authorized_account: AccountWithToken
+    username: str
+    email: pydantic.EmailStr
     is_profile_created: bool
 
 

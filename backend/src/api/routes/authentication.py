@@ -43,24 +43,28 @@ limiter = Limiter(key_func=get_remote_address)
 @router.post(
     path="/signup",
     name="auth:account-signup",
-    response_model=AccountInResponse,
+    response_model=AccountInSignupResponse,
     status_code=fastapi.status.HTTP_201_CREATED,
 )
-async def account_registration_endpoint(
+async def account_signup_endpoint(
     request: fastapi.Request,
     background_tasks: FastApiBackgroundTasks,
     account_signup: AccountInSignup = fastapi.Body(..., embed=True),
     account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
     profile_crud: ProfileCRUDRepository = fastapi.Depends(get_crud(repo_type=ProfileCRUDRepository)),
-) -> AccountInResponse:
+) -> AccountInSignupResponse:
     is_credential_available = await account_crud.is_credentials_available(account_input=account_signup)
 
     if not is_credential_available:
         raise await http_exc_400_credentials_bad_signup_request()
 
-    new_account = await account_crud.create_account(account_signup=account_signup)
-    new_profile = await profile_crud.create_profile(parent_account=new_account)
-    jwt_token = jwt_manager.generate_jwt(account=new_account)
+    try:
+        new_account = await account_crud.create_account(account_signup=account_signup)
+        new_profile = await profile_crud.create_profile(parent_account=new_account)
+
+    except Exception as e:
+        loguru.logger.error(e)
+        raise await http_exc_400_credentials_bad_signup_request()
 
     send_email_background(
         background_tasks=background_tasks,
@@ -68,12 +72,7 @@ async def account_registration_endpoint(
         body={"verification_code": new_account.verification_code},
     )
 
-    return AccountInSignupResponse(
-        authorized_account=AccountWithToken(
-            token=jwt_token, hashed_password=new_account.hashed_password, **new_account.__dict__
-        ),
-        is_profile_created=True if new_profile else False,
-    )
+    return AccountInSignupResponse(username=new_account.username, email=new_account.email, is_profile_created=True)
 
 
 @router.post(

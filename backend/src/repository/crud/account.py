@@ -3,6 +3,7 @@ import uuid
 from random import randint
 
 import fastapi
+import loguru
 import pydantic
 import sqlalchemy
 from sqlalchemy.orm import selectinload as sqlalchemy_selectinload
@@ -19,7 +20,13 @@ from src.models.schema.account import (
 )
 from src.models.schema.email import EmailInVerification
 from src.repository.crud.base import BaseCRUDRepository
-from src.utility.exceptions.custom import AccountIsNotVerified, EntityDoesNotExist, PasswordDoesNotMatch
+from src.utility.exceptions.custom import (
+    AccountIsNotVerified,
+    EntityDoesNotExist,
+    FailedToSaveAccount,
+    PasswordDoesNotMatch,
+)
+from src.utility.exceptions.http.exc_400 import http_exc_400_credentials_bad_signup_request
 from src.utility.typing.account import AccountForInput, AccountRetriever, Accounts
 
 
@@ -31,10 +38,15 @@ class AccountCRUDRepository(BaseCRUDRepository):
         )
         new_account.verification_code = randint(100000, 999999)
 
-        self.async_session.add(instance=new_account)
-        await self.async_session.commit()
-        await self.async_session.refresh(instance=new_account)
-        await self.async_session.close()
+        try:
+            self.async_session.add(instance=new_account)
+            await self.async_session.commit()
+            await self.async_session.refresh(instance=new_account)
+            await self.async_session.close()
+
+        except:
+            await self.async_session.rollback()
+            raise FailedToSaveAccount
 
         return new_account
 

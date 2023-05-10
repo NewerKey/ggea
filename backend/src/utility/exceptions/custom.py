@@ -32,3 +32,9 @@ class AccountIsNotVerified(Exception):
     """
     Throw an error if Account is not verified.
     """
+
+
+class FailedToSaveAccount(Exception):
+    """
+    Throw an error if an error accured while saving the Account
+    """
