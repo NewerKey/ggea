@@ -3,6 +3,7 @@ import pathlib
 
 import decouple
 import pydantic
+from fastapi_mail import ConnectionConfig as FastApiMailConnectionConfig
 
 ROOT_DIR: pathlib.Path = pathlib.Path(__file__).parent.parent.parent.parent.parent.resolve()
 
@@ -99,10 +100,38 @@ class Settings(pydantic.BaseSettings):
     PT_MODEL_FILE_EXTENSION_1: str = decouple.config("PT_MODEL_FILE_EXTENSION_1", cast=str)  # type: ignore
     PT_MODEL_FILE_EXTENSION_2: str = decouple.config("PT_MODEL_FILE_EXTENSION_2", cast=str)  # type: ignore
 
+    MAIL_USERNAME: str = decouple.config("MAIL_USERNAME", cast=str)  # type: ignore
+    MAIL_PASSWORD: str = decouple.config("MAIL_PASSWORD", cast=str)  # type: ignore
+    MAIL_FROM: str = decouple.config("MAIL_FROM", cast=str)  # type: ignore
+    MAIL_PORT: int = decouple.config("MAIL_PORT", cast=int)  # type: ignore
+    MAIL_SERVER: str = decouple.config("MAIL_SERVER", cast=str)  # type: ignore
+    MAIL_SSL_TLS: bool = decouple.config("MAIL_SSL", cast=bool)  # type: ignore
+    MAIL_DEBUG: bool = decouple.config("MAIL_DEBUG", cast=bool)  # type: ignore
+    MAIL_USE_CREDENTIALS: bool = decouple.config("MAIL_USE_CREDENTIALS", cast=bool)  # type: ignore
+    MAIL_TEMPLATE_FOLDER: str = f"{str(ROOT_DIR)}/backend/src/utility/email/templates"
+
     class Config(pydantic.BaseConfig):
         case_sensitive: bool = True
         env_file: str = f"{str(ROOT_DIR)}/.env"
         validate_assignment: bool = True
+
+    @property
+    def get_fast_mail_configuration(self) -> FastApiMailConnectionConfig:
+        """
+        Get `FastAPI` mail configuration.
+        """
+        return FastApiMailConnectionConfig(
+            MAIL_USERNAME=self.MAIL_USERNAME,
+            MAIL_PASSWORD=self.MAIL_PASSWORD,
+            MAIL_FROM=self.MAIL_FROM,
+            MAIL_PORT=self.MAIL_PORT,
+            MAIL_SERVER=self.MAIL_SERVER,
+            MAIL_SSL_TLS=False,
+            MAIL_STARTTLS=True,
+            MAIL_DEBUG=self.MAIL_DEBUG,
+            USE_CREDENTIALS=self.MAIL_USE_CREDENTIALS,
+            TEMPLATE_FOLDER=self.MAIL_TEMPLATE_FOLDER,
+        )
 
     @property
     def set_backend_app_attributes(self) -> dict[str, str | bool | None]:

@@ -1,5 +1,6 @@
 import typing
 import uuid
+from random import randint
 
 import fastapi
 import pydantic
@@ -16,8 +17,9 @@ from src.models.schema.account import (
     AccountInSignup,
     AccountInUpdate,
 )
+from src.models.schema.email import EmailInVerification
 from src.repository.crud.base import BaseCRUDRepository
-from src.utility.exceptions.custom import EntityDoesNotExist, PasswordDoesNotMatch
+from src.utility.exceptions.custom import AccountIsNotVerified, EntityDoesNotExist, PasswordDoesNotMatch
 from src.utility.typing.account import AccountForInput, AccountRetriever, Accounts
 
 
@@ -27,6 +29,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         new_account.hashed_salt, new_account.hashed_password = new_account.set_password(
             password=account_signup.password
         )
+        new_account.verification_code = randint(100000, 999999)
 
         self.async_session.add(instance=new_account)
         await self.async_session.commit()
@@ -207,6 +210,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         if not db_account:
             raise EntityDoesNotExist(f"Account with id `{id}` does not exist!")  # type: ignore
 
+        #! SHOULD OTP BE ENABLED AND VERIFIED AT THIS POINT?
         update_stmt = (
             sqlalchemy.update(table=Account)
             .where(Account.id == db_account.id)
@@ -251,6 +255,9 @@ class AccountCRUDRepository(BaseCRUDRepository):
         if not db_account:
             raise EntityDoesNotExist("Wrong username or wrong email!")
 
+        if not db_account.is_verified:
+            raise AccountIsNotVerified("Account is not verified! Please verify your account first.")
+
         if not db_account.is_password_verified(password=account_signin.password):
             raise PasswordDoesNotMatch("Password does not match! Please try again.")
         update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=True)
@@ -264,7 +271,10 @@ class AccountCRUDRepository(BaseCRUDRepository):
         db_account = await self._read_account_by_username(username=account_signin.username)
 
         if not db_account:
-            raise EntityDoesNotExist(f"Wrong wrong username!\n No user with {account_signin.username}")
+            raise EntityDoesNotExist(f"Wrong wrong username!")
+
+        if not db_account.is_verified:
+            raise AccountIsNotVerified("Account is not verified! Please verify your account first.")
 
         if not db_account.is_password_verified(password=account_signin.password):
             raise PasswordDoesNotMatch("Password does not match! Please try again.")
@@ -291,3 +301,22 @@ class AccountCRUDRepository(BaseCRUDRepository):
             raise EntityDoesNotExist(f"Account with username `{username}` does not exist!")
 
         return db_account.is_otp_enabled
+
+    async def verify_account(self, email_in_verification: EmailInVerification) -> bool:
+        db_account = await self._read_account_by_email(email=email_in_verification.email)
+
+        if not db_account:
+            raise EntityDoesNotExist(f"Account with email does not exist!")
+
+        if db_account.is_verified:
+            return True
+
+        if db_account.verification_code != email_in_verification.verification_code:
+            return False
+
+        else:
+            update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_verified=True)
+            await self.async_session.execute(statement=update_stmt)
+            await self.async_session.commit()
+            await self.async_session.refresh(instance=db_account)
+            return True

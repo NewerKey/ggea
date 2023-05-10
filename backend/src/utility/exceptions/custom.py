@@ -26,3 +26,9 @@ class PasswordDoesNotMatch(Exception):
     """
     Throw an error if Account password doesn't match.
     """
+
+
+class AccountIsNotVerified(Exception):
+    """
+    Throw an error if Account is not verified.
+    """

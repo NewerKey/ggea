@@ -37,3 +37,4 @@ gunicorn
 password_strength
 pyotp
 slowapi
+fastapi-mail

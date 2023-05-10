@@ -1,7 +1,10 @@
 import typing
+from random import randint
 
 import fastapi
+import loguru
 import pyotp
+from fastapi import BackgroundTasks as FastApiBackgroundTasks
 from slowapi import _rate_limit_exceeded_handler, Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -19,11 +22,13 @@ from src.models.schema.account import (
     AccountInSignupResponse,
     AccountWithToken,
 )
+from src.models.schema.email import EmailInVerification
 from src.repository.crud.account import AccountCRUDRepository
 from src.repository.crud.profile import ProfileCRUDRepository
 from src.security.authorizations import two_factor_auth
 from src.security.authorizations.jwt import jwt_manager
 from src.security.authorizations.oauth2 import oauth2_get_current_user
+from src.utility.email.email_sender import send_email_background
 from src.utility.exceptions.custom import EmailAlreadyExists, UsernameAlreadyExists
 from src.utility.exceptions.http.exc_400 import (
     http_exc_400_credentials_bad_signin_request,
@@ -43,6 +48,7 @@ limiter = Limiter(key_func=get_remote_address)
 )
 async def account_registration_endpoint(
     request: fastapi.Request,
+    background_tasks: FastApiBackgroundTasks,
     account_signup: AccountInSignup = fastapi.Body(..., embed=True),
     account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
     profile_crud: ProfileCRUDRepository = fastapi.Depends(get_crud(repo_type=ProfileCRUDRepository)),
@@ -55,6 +61,13 @@ async def account_registration_endpoint(
     new_account = await account_crud.create_account(account_signup=account_signup)
     new_profile = await profile_crud.create_profile(parent_account=new_account)
     jwt_token = jwt_manager.generate_jwt(account=new_account)
+
+    send_email_background(
+        background_tasks=background_tasks,
+        email_to=new_account.email,
+        body={"verification_code": new_account.verification_code},
+    )
+
     return AccountInSignupResponse(
         authorized_account=AccountWithToken(
             token=jwt_token, hashed_password=new_account.hashed_password, **new_account.__dict__
@@ -70,14 +83,15 @@ async def account_registration_endpoint(
     status_code=fastapi.status.HTTP_202_ACCEPTED,
 )
 @limiter.limit("5/120seconds")
-async def account_login_endpoint(
+async def account_singin_endpoint(
     request: fastapi.Request,
     account_signin: AccountInSignin = fastapi.Body(..., embed=True),
     account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
 ) -> AccountInResponse:
     try:
         logged_in_account = await account_crud.signin_account(account_signin=account_signin)
-    except Exception:
+    except Exception as e:
+        loguru.logger.error(e)
         raise await http_exc_400_credentials_bad_signin_request()
 
     jwt_token = jwt_manager.generate_jwt(account=logged_in_account)
@@ -86,6 +100,26 @@ async def account_login_endpoint(
             token=jwt_token, hashed_password=logged_in_account.hashed_password, **logged_in_account.__dict__
         )
     )
+
+
+@router.post(
+    path="/account_verfication",
+    name="auth:account-verfication",
+    response_model=dict,
+    status_code=fastapi.status.HTTP_200_OK,
+)
+@limiter.limit("5/120seconds")
+async def account_verification(
+    request: fastapi.Request,
+    email_in_verification: EmailInVerification = fastapi.Body(..., embed=True),
+    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
+) -> dict:
+    try:
+        is_verified = await account_crud.verify_account(email_in_verification=email_in_verification)
+    except Exception:
+        raise await http_exc_400_credentials_bad_signin_request()
+
+    return {"is_verified": is_verified}
 
 
 @router.post(
