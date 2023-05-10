@@ -74,6 +74,34 @@ class AccountCRUDRepository(BaseCRUDRepository):
         query = await self.async_session.execute(statement=select_stmt)
         return query.scalars().all()
 
+    async def read_account(self, account_in_read: AccountInRead) -> Account:
+        if account_in_read.id:
+            db_account = await self._read_account_by_id(id=account_in_read.id)
+        elif account_in_read.username:
+            db_account = await self._read_account_by_username(username=account_in_read.username)
+        elif account_in_read.email:
+            db_account = await self._read_account_by_email(email=account_in_read.email)
+
+        if not self._check_db_account_matches_account_in_read(db_account=db_account, account_in_read=account_in_read):
+            raise EntityDoesNotExist(f"Account with these details does not exist!")
+
+        else:
+            return db_account
+
+    async def _check_db_account_matches_account_in_read(
+        self, db_account: Account, account_in_read: AccountInRead
+    ) -> bool:
+        if account_in_read.id:
+            if db_account.id != account_in_read.id:
+                return False
+        if account_in_read.username:
+            if db_account.username != account_in_read.username:
+                return False
+        if account_in_read.email:
+            if db_account.email != account_in_read.email:
+                return False
+        return True
+
     async def _read_account_by_id(self, id: uuid.UUID) -> Account:
         select_stmt = sqlalchemy.select(Account).where(Account.id == id)
         query = await self.async_session.execute(statement=select_stmt)
@@ -94,33 +122,6 @@ class AccountCRUDRepository(BaseCRUDRepository):
         if not query:
             raise EntityDoesNotExist(f"Account with email `{email}` does not exist!")
         return query.scalar()  # type: ignore
-
-    async def read_account_by_username_and_email(self, account_retriever: AccountRetriever) -> Account:
-        select_stmt = (
-            sqlalchemy.select(Account)
-            .where(Account.username == account_retriever.username, Account.email == account_retriever.email)
-            .options(sqlalchemy_selectinload("*"))
-        )
-        query = await self.async_session.execute(statement=select_stmt)
-        if not query:
-            raise EntityDoesNotExist(
-                f"Account with username `{account_retriever.username}` and email {account_retriever.email} does not exist!"
-            )
-        return query.scalar()  # type: ignore
-
-    async def read_specific_accounts(self, account_read: AccountInRead) -> Accounts:
-        db_accounts: list[Account] = list()
-
-        if account_read.id:
-            db_account = await self._read_account_by_id(id=account_read.id)  # type: ignore
-            db_accounts.append(db_account)
-        if account_read.email:
-            db_account = await self._read_account_by_email(email=account_read.email)
-            db_accounts.append(db_account)
-        if account_read.username:
-            db_account = await self._read_account_by_username(username=account_read.username)
-            db_accounts.append(db_account)
-        return set(db_accounts)
 
     async def update_account_by_id(self, id: uuid.UUID, account_update: AccountInUpdate) -> Account:
         update_data = account_update.dict(exclude_unset=True)
@@ -250,7 +251,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return True
 
     async def signin_account(self, account_signin: AccountInSignin) -> Account:
-        db_account = await self.read_account_by_username_and_email(account_retriever=account_signin)
+        db_account = await self.read_account(account_in_read=AccountInRead(username=account_signin.username))
 
         if not db_account:
             raise EntityDoesNotExist("Wrong username or wrong email!")
@@ -268,7 +269,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return db_account
 
     async def signin_oauth_account(self, account_signin: AccountInOAuthSignIn) -> Account:
-        db_account = await self._read_account_by_username(username=account_signin.username)
+        db_account = await self.read_account(account_in_read=AccountInRead(username=account_signin.username))
 
         if not db_account:
             raise EntityDoesNotExist(f"Wrong wrong username!")

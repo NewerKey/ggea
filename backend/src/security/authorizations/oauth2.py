@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.api.dependency.crud import get_crud
 from src.config.setup import settings
-from src.models.schema.account import CurrentAccountInRead
+from src.models.schema.account import AccountInRead
 from src.repository.crud.account import AccountCRUDRepository
 from src.security.authorizations.jwt import jwt_manager
 from src.utility.exceptions.http.exc_403 import http_exc_403_forbidden_request
@@ -21,8 +21,8 @@ async def oauth2_get_current_user(
         username, email = jwt_manager.retrieve_details_from_jwt(token=token)
 
         # TODO: Try to read the account from the db to double check that it exists
-        return await account_crud.read_account_by_username_and_email(
-            account_retriever=CurrentAccountInRead(username=username, email=pydantic.EmailStr(email))
+        return await account_crud.read_account(
+            account_in_read=AccountInRead(username=username, email=pydantic.EmailStr(email))
         )
     except ValueError as value_error:
         raise await http_exc_403_forbidden_request() from value_error

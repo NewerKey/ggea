@@ -34,7 +34,6 @@ class AccountInOAuthSignIn(BaseSchemaModel):
 
 class AccountInSignin(BaseSchemaModel):
     username: str
-    email: pydantic.EmailStr
     password: str
 
 

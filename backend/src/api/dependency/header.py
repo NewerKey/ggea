@@ -6,7 +6,7 @@ import pydantic
 from src.api.dependency.crud import get_crud
 from src.config.setup import settings
 from src.models.db.account import Account
-from src.models.schema.account import CurrentAccountInRead
+from src.models.schema.account import AccountInRead
 from src.repository.crud.account import AccountCRUDRepository
 from src.security.authorizations.jwt import jwt_manager
 from src.utility.design_patterns.factory.api_key import get_api_key
@@ -53,8 +53,8 @@ async def _retrieve_current_user(
         raise await http_exc_403_forbidden_request() from value_error
 
     try:
-        return await account_crud.read_account_by_username_and_email(
-            account_retriever=CurrentAccountInRead(username=username, email=pydantic.EmailStr(email))
+        return await account_crud.read_account(
+            account_in_read=AccountInRead(username=username, email=pydantic.EmailStr(email))
         )
 
     except EntityDoesNotExist as value_error:
