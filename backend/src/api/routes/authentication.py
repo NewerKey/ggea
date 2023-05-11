@@ -34,10 +34,13 @@ from src.security.authorizations.jwt import jwt_manager
 from src.security.authorizations.oauth2 import oauth2_get_current_user
 from src.utility.email.email_sender import send_email_background
 from src.utility.exceptions.custom import EmailAlreadyExists, UsernameAlreadyExists
-from src.utility.exceptions.http.exc_400 import (
-    http_exc_400_credentials_bad_signin_request,
-    http_exc_400_credentials_bad_signup_request,
+from src.utility.exceptions.http.http_4xx import (
+    http_exc_400_bad_request,
+    http_exc_401_unauthorized_request,
+    http_exc_403_forbidden_request,
+    http_exc_404_resource_not_found,
 )
+from src.utility.exceptions.http.http_5xx import http_exc_500_internal_server_error
 
 router = fastapi.APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -60,7 +63,7 @@ async def account_signup_endpoint(
     is_credential_available = await account_crud.is_credentials_available(account_input=account_signup)
 
     if not is_credential_available:
-        raise await http_exc_400_credentials_bad_signup_request()
+        raise await http_exc_400_bad_request(msg="Username or email is already taken")
 
     try:
         new_account = await account_crud.create_account(account_signup=account_signup)
@@ -68,7 +71,7 @@ async def account_signup_endpoint(
 
     except Exception as e:
         loguru.logger.error(e)
-        raise await http_exc_400_credentials_bad_signup_request()
+        raise await http_exc_500_internal_server_error(msg="Failed to create account")
 
     send_email_background(
         background_tasks=background_tasks,
