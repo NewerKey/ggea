@@ -26,6 +26,8 @@ from src.utility.exceptions.custom import (
     EntityDoesNotExist,
     FailedToSaveAccount,
     PasswordDoesNotMatch,
+    AccountIsAlreadyVerified,
+    VerificationCodeDoesNotMatch,
 )
 from src.utility.exceptions.database import DatabaseError
 from src.utility.exceptions.http.exc_400 import http_exc_400_credentials_bad_signup_request
@@ -290,12 +292,16 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return db_account
 
     async def signout_account(self, account_signout: AccountInSignout) -> Account:
-        db_account = await self._read_account_by_id(id=account_signout.id)  # type: ignore
-        update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=False)
-        await self.async_session.execute(statement=update_stmt)
-        await self.async_session.commit()
-        await self.async_session.refresh(instance=db_account)
-        return db_account
+        try:
+            db_account = await self._read_account_by_id(id=account_signout.id)  # type: ignore
+            update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=False)
+            await self.async_session.execute(statement=update_stmt)
+            await self.async_session.commit()
+            await self.async_session.refresh(instance=db_account)
+            return db_account
+        except Exception:
+            await self.async_session.rollback()
+            raise Exception("Failed to signout account, try again!")
 
     async def is_otp_enabled(self, username: str) -> bool:
         db_account = await self._read_account_by_username(username=username)
@@ -312,10 +318,10 @@ class AccountCRUDRepository(BaseCRUDRepository):
             raise EntityDoesNotExist(f"Account with email does not exist!")
 
         if db_account.is_verified:
-            return True
+            raise AccountIsAlreadyVerified("Account is already verified!")
 
         if db_account.verification_code != email_in_verification.verification_code:
-            return False
+            raise VerificationCodeDoesNotMatch("Verification code does not match!")
 
         else:
             update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_verified=True)

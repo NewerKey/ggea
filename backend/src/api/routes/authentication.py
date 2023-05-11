@@ -130,8 +130,8 @@ async def account_verification(
 ) -> dict:
     try:
         is_verified = await account_crud.verify_account(email_in_verification=email_in_verification)
-    except Exception:
-        raise await http_exc_400_credentials_bad_signin_request()
+    except Exception as e:
+        raise await http_exc_400_bad_request(msg=e)
 
     return {"is_verified": is_verified}
 
@@ -148,8 +148,8 @@ async def account_logout_endpoint(
 ) -> AccountInSignoutResponse:
     try:
         logged_out_account = await account_crud.signout_account(account_signout=account_signout)
-    except Exception:
-        raise await http_exc_400_credentials_bad_signin_request()
+    except Exception as e:
+        raise await http_exc_400_bad_request(msg=e)
     return AccountInSignoutResponse(
         username=logged_out_account.username, is_logged_out=logged_out_account.is_logged_in
     )
@@ -177,13 +177,13 @@ async def validate_credentials_and_otp(
         AccountInOAuthSignIn(username=form_data.username, password=form_data.password)
     )
     if not account_in_db:
-        raise await http_exc_400_credentials_bad_signin_request()
+        raise await http_exc_403_forbidden_request(msg="Invalid credentials")
 
     # if account_in_db.is_otp_enabled:
     #     is_token_valid = two_factor_auth.validate_otp(otp_token, account_in_db.otp_secret)
 
-    #     if not is_token_valid:
-    #         raise await http_exc_400_credentials_bad_signin_request()
+        if not is_token_valid:
+            raise await http_exc_403_forbidden_request(msg="Invalid OTP token")
 
     logged_in_account = AccountInRead(**account_in_db.__dict__)
 

@@ -33,6 +33,16 @@ class AccountIsNotVerified(Exception):
     Throw an error if Account is not verified.
     """
 
+class AccountIsAlreadyVerified(Exception):
+    """
+    Throw an error if Account is already verified.
+    """
+
+class VerificationCodeDoesNotMatch(Exception):
+    """
+    Throw an error if Account verification code doesn't match.
+    """
+
 
 class FailedToSaveAccount(Exception):
     """
