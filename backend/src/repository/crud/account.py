@@ -20,14 +20,16 @@ from src.models.schema.account import (
 )
 from src.models.schema.email import EmailInVerification
 from src.repository.crud.base import BaseCRUDRepository
+from src.security.authorizations import two_factor_auth
 from src.utility.exceptions.custom import (
     AccountIsNotVerified,
     EntityDoesNotExist,
     FailedToSaveAccount,
     PasswordDoesNotMatch,
 )
+from src.utility.exceptions.database import DatabaseError
 from src.utility.exceptions.http.exc_400 import http_exc_400_credentials_bad_signup_request
-from src.utility.typing.account import AccountForInput, AccountRetriever, Accounts
+from src.utility.typing.account import AccountForInput, AccountForUpdate, AccountRetriever, Accounts
 
 
 class AccountCRUDRepository(BaseCRUDRepository):
@@ -94,7 +96,12 @@ class AccountCRUDRepository(BaseCRUDRepository):
         elif account_in_read.email:
             db_account = await self._read_account_by_email(email=account_in_read.email)
 
-        if not self._check_db_account_matches_account_in_read(db_account=db_account, account_in_read=account_in_read):
+        if not db_account:
+            raise EntityDoesNotExist(f"Account with these details does not exist!")
+
+        if not await self._check_db_account_matches_account_in_read(
+            db_account=db_account, account_in_read=account_in_read
+        ):
             raise EntityDoesNotExist(f"Account with these details does not exist!")
 
         else:
@@ -135,12 +142,12 @@ class AccountCRUDRepository(BaseCRUDRepository):
             raise EntityDoesNotExist(f"Account with email `{email}` does not exist!")
         return query.scalar()  # type: ignore
 
-    async def update_account_by_id(self, id: uuid.UUID, account_update: AccountInUpdate) -> Account:
+    async def update_account_by_id(self, id: uuid.UUID, account_update: AccountForUpdate) -> Account:
         update_data = account_update.dict(exclude_unset=True)
-        db_account = await self._read_account_by_id(id=id)
+        db_account = await self.read_account(account_in_read=AccountInRead(id=id))
 
         if not db_account:
-            raise EntityDoesNotExist(f"Account with id `{id}` does not exist!")  # type: ignore
+            raise EntityDoesNotExist(f"Account with that iddoes not exist!")  # type: ignore
 
         update_stmt = (
             sqlalchemy.update(table=Account)
@@ -148,18 +155,25 @@ class AccountCRUDRepository(BaseCRUDRepository):
             .values(updated_at=sqlalchemy_functions.now())
         )  # type: ignore
 
-        if update_data["username"]:
-            update_stmt = update_stmt.values(username=update_data["username"])
-        if update_data["email"]:
-            update_stmt = update_stmt.values(email=update_data["email"])
-        if update_data["password"]:
-            salt, password = db_account.set_password(password=update_data["password"])
-            update_stmt = update_stmt.values(hashed_salt=salt, hashed_password=password)
+        for key, value in update_data.items():
+            if key == "password":
+                salt, password = db_account.set_password(password=update_data["password"])
+                update_stmt = update_stmt.values(hashed_salt=salt, hashed_password=password)
+                loguru.logger.debug(f"Updating {key} to {value}")
+            else:
+                update_stmt = update_stmt.values(**{key: value})
+                loguru.logger.debug(f"Updating {key} to {value}")
 
-        await self.async_session.execute(statement=update_stmt)
-        await self.async_session.commit()
-        await self.async_session.refresh(instance=db_account)
-        return db_account
+        try:
+            await self.async_session.execute(statement=update_stmt)
+            await self.async_session.commit()
+            await self.async_session.refresh(instance=db_account)
+            return db_account
+
+        except Exception as e:
+            await self.async_session.rollback()
+            await self.async_session.close()
+            raise DatabaseError
 
     async def update_account_by_username(self, username: str, account_update: AccountInUpdate) -> Account:
         update_data = account_update.dict(exclude_unset=True)
@@ -193,37 +207,14 @@ class AccountCRUDRepository(BaseCRUDRepository):
         except sqlalchemy.exc.DataError as e:
             raise fastapi.HTTPException(status_code=400, detail=str(e))
 
-    async def update_account(self, id: uuid.UUID, update_data: dict) -> Account:
-        db_account = await self._read_account_by_id(id=id)
-
-        if not db_account:
-            raise EntityDoesNotExist(f"Account with id `{id}` does not exist!")
-
-        update_stmt = (
-            sqlalchemy.update(table=Account)
-            .where(Account.id == db_account.id)
-            .values(updated_at=sqlalchemy_functions.now())
-        )
-
-        for key, value in update_data.items():
-            update_stmt = update_stmt.values(**{key: value})
-
-        try:
-            await self.async_session.execute(statement=update_stmt)
-            await self.async_session.commit()
-            await self.async_session.refresh(instance=db_account)
-            return db_account
-
-        except sqlalchemy.exc.DataError as e:
-            raise fastapi.HTTPException(status_code=500, detail=str(e))
-
-    async def set_otp_details(self, account: Account, otp_secret: str, otp_auth_url: str) -> Account:
+    async def set_otp_details(self, account: Account) -> tuple[Account, str, str]:
         db_account = await self._read_account_by_id(id=account.id)
 
         if not db_account:
-            raise EntityDoesNotExist(f"Account with id `{id}` does not exist!")  # type: ignore
+            raise EntityDoesNotExist(f"Account with that id does not exist!")  # type: ignore
 
-        #! SHOULD OTP BE ENABLED AND VERIFIED AT THIS POINT?
+        otp_secret, otp_auth_url = two_factor_auth.generate_otp()
+
         update_stmt = (
             sqlalchemy.update(table=Account)
             .where(Account.id == db_account.id)
@@ -231,14 +222,13 @@ class AccountCRUDRepository(BaseCRUDRepository):
                 otp_secret=otp_secret,
                 otp_auth_url=otp_auth_url,
                 is_otp_enabled=True,
-                is_otp_verified=True,
                 updated_at=sqlalchemy_functions.now(),
             )
         )
         await self.async_session.execute(statement=update_stmt)
         await self.async_session.commit()
         await self.async_session.refresh(instance=db_account)
-        return db_account
+        return (db_account, otp_secret, otp_auth_url)
 
     async def delete_account_by_id(self, id: uuid.UUID) -> bool:
         db_account = await self._read_account_by_id(id=id)

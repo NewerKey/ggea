@@ -47,6 +47,9 @@ class Account(DBBaseTable):
         nullable=True,
         server_onupdate=sqlalchemy.schema.FetchedValue(for_update=True),
     )
+    logged_in_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
+        sqlalchemy.DateTime(timezone=True), nullable=True
+    )
     profile = sqlalchemy_relationship("Profile", uselist=False, back_populates="account")
 
     __mapper_args__ = {"eager_defaults": True}

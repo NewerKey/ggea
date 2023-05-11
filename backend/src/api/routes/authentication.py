@@ -1,3 +1,4 @@
+import datetime
 import typing
 from random import randint
 
@@ -8,6 +9,7 @@ from fastapi import BackgroundTasks as FastApiBackgroundTasks
 from slowapi import _rate_limit_exceeded_handler, Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from sqlalchemy.sql import functions as sqlalchemy_functions
 
 from src.api.dependency.crud import get_crud
 from src.models.db.account import Account
@@ -20,9 +22,11 @@ from src.models.schema.account import (
     AccountInSignoutResponse,
     AccountInSignup,
     AccountInSignupResponse,
+    AccountInStateUpdate,
     AccountWithToken,
 )
 from src.models.schema.email import EmailInVerification
+from src.models.schema.otp import OtpIn, OtpInGenerateResponse, OtpInVerifyResponse
 from src.repository.crud.account import AccountCRUDRepository
 from src.repository.crud.profile import ProfileCRUDRepository
 from src.security.authorizations import two_factor_auth
@@ -93,11 +97,19 @@ async def account_singin_endpoint(
         loguru.logger.error(e)
         raise await http_exc_400_credentials_bad_signin_request()
 
+    if logged_in_account.is_otp_enabled and logged_in_account.is_otp_verified:
+        await account_crud.update_account_by_id(
+            id=logged_in_account.id,
+            account_update=AccountInStateUpdate(is_logged_in=True, logged_in_at=datetime.datetime.utcnow()),
+        )
+        return AccountInResponse(authorized_account=None, is_otp_required=True)
+
     jwt_token = jwt_manager.generate_jwt(account=logged_in_account)
     return AccountInResponse(
         authorized_account=AccountWithToken(
             token=jwt_token, hashed_password=logged_in_account.hashed_password, **logged_in_account.__dict__
-        )
+        ),
+        is_otp_required=False,
     )
 
 
@@ -149,25 +161,26 @@ async def validate_credentials_and_otp(
     # I need to know if the account has 2FA enabled or not before I can validate the password,
     # because the password is passed together with the OTP token in the same field.
 
-    is_otp_enabled = await account_repo.is_otp_enabled(username=form_data.username)
+    # is_otp_enabled = await account_repo.is_otp_enabled(username=form_data.username)
 
-    if is_otp_enabled:
-        password, otp_token = two_factor_auth.separate_password_and_otp(form_data.password)
+    # loguru.logger.debug(f"Is OTP enabled: {is_otp_enabled}")
+    # if is_otp_enabled:
+    #     password, otp_token = two_factor_auth.separate_password_and_otp(form_data.password)
 
-    else:
-        password = form_data.password
+    # else:
+    #     password = form_data.password
 
     account_in_db = await account_repo.signin_oauth_account(
-        AccountInOAuthSignIn(username=form_data.username, password=password)
+        AccountInOAuthSignIn(username=form_data.username, password=form_data.password)
     )
     if not account_in_db:
         raise await http_exc_400_credentials_bad_signin_request()
 
-    if account_in_db.is_otp_enabled:
-        is_token_valid = two_factor_auth.validate_otp(otp_token, account_in_db.otp_secret)
+    # if account_in_db.is_otp_enabled:
+    #     is_token_valid = two_factor_auth.validate_otp(otp_token, account_in_db.otp_secret)
 
-        if not is_token_valid:
-            raise await http_exc_400_credentials_bad_signin_request()
+    #     if not is_token_valid:
+    #         raise await http_exc_400_credentials_bad_signin_request()
 
     logged_in_account = AccountInRead(**account_in_db.__dict__)
 
@@ -176,21 +189,17 @@ async def validate_credentials_and_otp(
     return {"access_token": jwt_token, "token_type": "bearer"}
 
 
-@router.post("/otp/generate", response_model=typing.Any)
+@router.post(
+    path="/otp/generate",
+    name="auth:otp-generate",
+    response_model=dict,
+    status_code=fastapi.status.HTTP_200_OK,
+)
 async def generate_otp(
-    id: int,
     account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
     current_account: Account = fastapi.Depends(oauth2_get_current_user),
-) -> typing.Any:
-    otp_secret = pyotp.random_base32()
-    otp_auth_url = pyotp.totp.TOTP(otp_secret).provisioning_uri(name="test", issuer_name="GGEA")
-
-    if not id == current_account.id:
-        raise fastapi.HTTPException(status_code=403, detail="Not allowed")
-
-    updated_account = await account_repo.set_otp_details(
-        account=current_account, otp_secret=otp_secret, otp_auth_url=otp_auth_url
-    )
+) -> dict:
+    updated_account, otp_secret, otp_auth_url = await account_repo.set_otp_details(account=current_account)
 
     if not updated_account:
         raise fastapi.HTTPException(status_code=500, detail="Failed to set otp details")
@@ -198,42 +207,64 @@ async def generate_otp(
     return {"otp_secret": otp_secret, "otp_auth_url": otp_auth_url}
 
 
-@router.post("/otp/verify", response_model=typing.Any)
+@router.post(
+    path="/otp/verify",
+    name="auth:otp-verify",
+    response_model=dict,
+    status_code=fastapi.status.HTTP_200_OK,
+)
 async def verify_otp(
-    id: int,
-    otp_token: str,
+    otp_in_verify: OtpIn = fastapi.Body(..., embed=True),
     account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
     current_account: Account = fastapi.Depends(oauth2_get_current_user),
-) -> typing.Any:
-    if not id == current_account.id:
+) -> dict:
+    if not otp_in_verify.email == current_account.email:
         raise fastapi.HTTPException(status_code=403, detail="Not allowed")
 
     totp = pyotp.TOTP(current_account.otp_secret)
-    if not totp.verify(otp_token):
+    if not totp.verify(otp_in_verify.otp_token):
         raise fastapi.HTTPException(status_code=403, detail="Invalid OTP Token")
 
-    updated_account = await account_repo.update_account(
-        id=current_account.id, update_data={"is_otp_verified": True, "is_otp_enabled": True}
+    await account_repo.update_account_by_id(
+        id=current_account.id, account_update=AccountInStateUpdate(is_otp_verified=True)
     )
 
     return {"message": "OTP Token Verified"}
 
 
-@router.post("/otp/validate", response_model=typing.Any)
+@router.post(
+    path="/otp/validate",
+    name="auth:otp-validate",
+    response_model=AccountInResponse,
+    status_code=fastapi.status.HTTP_200_OK,
+)
 async def validate_otp(
-    id: int,
-    otp_token: str,
+    otp_in_validate: OtpIn = fastapi.Body(..., embed=True),
     account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
-    current_account: Account = fastapi.Depends(oauth2_get_current_user),
-) -> typing.Any:
-    if not id == current_account.id:
-        raise fastapi.HTTPException(status_code=403, detail="Not allowed")
+) -> AccountInResponse:
+    try:
+        current_account = await account_repo.read_account(AccountInRead(email=otp_in_validate.email))
+    except Exception:
+        raise fastapi.HTTPException(status_code=403, detail="Account with that email does not exist")
 
     if not current_account.is_otp_verified:
         raise fastapi.HTTPException(status_code=403, detail="OTP not enabled")
 
-    totp = pyotp.TOTP(current_account.otp_secret)
-    if not totp.verify(otp_token, valid_window=1):
+    if not current_account.is_logged_in:
+        raise fastapi.HTTPException(status_code=403, detail="Not logged in")
+
+    if current_account.logged_in_at.replace(tzinfo=datetime.timezone.utc) + datetime.timedelta(
+        minutes=5
+    ) < datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc):
+        raise fastapi.HTTPException(status_code=403, detail="Logged in too long ago, please login again")
+
+    if not two_factor_auth.validate_otp(otp_token=otp_in_validate.otp_token, otp_secret=current_account.otp_secret):
         raise fastapi.HTTPException(status_code=403, detail="Invalid OTP Token")
 
-    return {"opt_valid": True}
+    jwt_token = jwt_manager.generate_jwt(account=current_account)
+    return AccountInResponse(
+        authorized_account=AccountWithToken(
+            token=jwt_token, hashed_password=current_account.hashed_password, **current_account.__dict__
+        ),
+        is_otp_required=False,
+    )

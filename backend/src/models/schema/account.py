@@ -58,6 +58,15 @@ class AccountInUpdate(BaseSchemaModel):
     password: str | None
 
 
+class AccountInStateUpdate(BaseSchemaModel):
+    is_logged_in: bool | None
+    is_verified: bool | None
+    is_admin: bool | None
+    is_otp_enabled: bool | None
+    is_otp_verified: bool | None
+    logged_in_at: datetime.datetime | None
+
+
 class AccountWithToken(BaseSchemaModel):
     id: uuid.UUID
     token: str
@@ -76,7 +85,8 @@ class AccountWithToken(BaseSchemaModel):
 
 
 class AccountInResponse(BaseSchemaModel):
-    authorized_account: AccountWithToken
+    authorized_account: AccountWithToken | None
+    is_otp_required: bool
 
 
 class AccountInSignupResponse(BaseSchemaModel):

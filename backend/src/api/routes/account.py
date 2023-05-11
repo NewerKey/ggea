@@ -33,6 +33,7 @@ async def retrieve_accounts(
             authorized_account=AccountWithToken(
                 token=jwt_token, hashed_password=db_account.hashed_password, **db_account.__dict__
             ),
+            is_otp_required=False,
         )
         db_account_list.append(account)
     return db_account_list
