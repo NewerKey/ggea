@@ -63,7 +63,7 @@ async def account_signup_endpoint(
     is_credential_available = await account_crud.is_credentials_available(account_input=account_signup)
 
     if not is_credential_available:
-        raise await http_exc_400_bad_request(msg="Username or email is already taken")
+        raise await http_exc_400_bad_request(error_msg="Username or email is already taken")
 
     try:
         new_account = await account_crud.create_account(account_signup=account_signup)
@@ -71,7 +71,7 @@ async def account_signup_endpoint(
 
     except Exception as e:
         loguru.logger.error(e)
-        raise await http_exc_500_internal_server_error(msg="Failed to create account")
+        raise await http_exc_500_internal_server_error(error_msg="Failed to create account")
 
     send_email_background(
         background_tasks=background_tasks,
@@ -97,8 +97,7 @@ async def account_singin_endpoint(
     try:
         logged_in_account = await account_crud.signin_account(account_signin=account_signin)
     except Exception as e:
-        loguru.logger.error(e)
-        raise await http_exc_400_credentials_bad_signin_request()
+        raise await http_exc_400_bad_request(error_msg=e.error_msg)
 
     if logged_in_account.is_otp_enabled and logged_in_account.is_otp_verified:
         await account_crud.update_account_by_id(
@@ -131,7 +130,7 @@ async def account_verification(
     try:
         is_verified = await account_crud.verify_account(email_in_verification=email_in_verification)
     except Exception as e:
-        raise await http_exc_400_bad_request(msg=e)
+        raise await http_exc_400_bad_request(error_msg=e)
 
     return {"is_verified": is_verified}
 
@@ -149,7 +148,7 @@ async def account_logout_endpoint(
     try:
         logged_out_account = await account_crud.signout_account(account_signout=account_signout)
     except Exception as e:
-        raise await http_exc_400_bad_request(msg=e)
+        raise await http_exc_400_bad_request(error_msg=e)
     return AccountInSignoutResponse(
         username=logged_out_account.username, is_logged_out=logged_out_account.is_logged_in
     )
@@ -177,13 +176,13 @@ async def validate_credentials_and_otp(
         AccountInOAuthSignIn(username=form_data.username, password=form_data.password)
     )
     if not account_in_db:
-        raise await http_exc_403_forbidden_request(msg="Invalid credentials")
+        raise await http_exc_403_forbidden_request(error_msg="Invalid credentials")
 
     # if account_in_db.is_otp_enabled:
     #     is_token_valid = two_factor_auth.validate_otp(otp_token, account_in_db.otp_secret)
 
         if not is_token_valid:
-            raise await http_exc_403_forbidden_request(msg="Invalid OTP token")
+            raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
 
     logged_in_account = AccountInRead(**account_in_db.__dict__)
 
@@ -205,7 +204,7 @@ async def generate_otp(
     updated_account, otp_secret, otp_auth_url = await account_repo.set_otp_details(account=current_account)
 
     if not updated_account:
-        raise fastapi.HTTPException(status_code=500, detail="Failed to set otp details")
+        raise await http_exc_500_internal_server_error(error_msg="Failed to generate OTP")
 
     return {"otp_secret": otp_secret, "otp_auth_url": otp_auth_url}
 
@@ -222,11 +221,11 @@ async def verify_otp(
     current_account: Account = fastapi.Depends(oauth2_get_current_user),
 ) -> dict:
     if not otp_in_verify.email == current_account.email:
-        raise fastapi.HTTPException(status_code=403, detail="Not allowed")
+        raise await http_exc_403_forbidden_request(error_msg="Invalid email")
 
     totp = pyotp.TOTP(current_account.otp_secret)
     if not totp.verify(otp_in_verify.otp_token):
-        raise fastapi.HTTPException(status_code=403, detail="Invalid OTP Token")
+        raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
 
     await account_repo.update_account_by_id(
         id=current_account.id, account_update=AccountInStateUpdate(is_otp_verified=True)
@@ -248,21 +247,21 @@ async def validate_otp(
     try:
         current_account = await account_repo.read_account(AccountInRead(email=otp_in_validate.email))
     except Exception:
-        raise fastapi.HTTPException(status_code=403, detail="Account with that email does not exist")
+        raise await http_exc_400_bad_request(error_msg="Invalid email")
 
     if not current_account.is_otp_verified:
-        raise fastapi.HTTPException(status_code=403, detail="OTP not enabled")
+        raise await http_exc_400_bad_request(error_msg="OTP not verified")
 
     if not current_account.is_logged_in:
-        raise fastapi.HTTPException(status_code=403, detail="Not logged in")
+        raise await http_exc_403_forbidden_request(error_msg="Account credentials not verified")
 
     if current_account.logged_in_at.replace(tzinfo=datetime.timezone.utc) + datetime.timedelta(
         minutes=5
     ) < datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc):
-        raise fastapi.HTTPException(status_code=403, detail="Logged in too long ago, please login again")
+        raise await http_exc_403_forbidden_request(error_msg="Account credentials verifeid too long ago, login again")
 
     if not two_factor_auth.validate_otp(otp_token=otp_in_validate.otp_token, otp_secret=current_account.otp_secret):
-        raise fastapi.HTTPException(status_code=403, detail="Invalid OTP Token")
+        raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
 
     jwt_token = jwt_manager.generate_jwt(account=current_account)
     return AccountInResponse(
