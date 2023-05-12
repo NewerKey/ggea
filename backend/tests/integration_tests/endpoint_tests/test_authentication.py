@@ -1,13 +1,20 @@
 # automated tests for the endpoints of the authentication router
-
+import loguru
 
 async def test_signup_success(async_client):
     # arrange & act
+    x = await async_client.get("api/v1/accounts")
+    loguru.logger.debug(x)
     response = await async_client.post(
         "api/v1/auth/signup",
         json={"account_signup": {"username": "string", "email": "user1@example.com", "password": "!1Password"}},
     )
     # assert
+    loguru.logger.debug(response.json())
+
+    x = await async_client.get("api/v1/accounts")
+    loguru.logger.debug(f"After signup")
+    loguru.logger.debug(x)
     assert response.status_code == 201
 
 
@@ -64,11 +71,13 @@ async def test_signin_success(async_client):
     await async_client.post("api/v1/auth/signup", json={"account_signup": user_object})
 
     # act
+
     response = await async_client.post(
         "api/v1/auth/signin", json={"account_signin": {"username": "signin_user", "password": "!1Password"}}
     )
 
     # assert
+    loguru.logger.debug(response.json())
     assert response.status_code == 202
 
 

@@ -27,7 +27,7 @@ from src.utility.exceptions.http.http_5xx import http_exc_500_internal_server_er
 router = fastapi.APIRouter(prefix="/accounts", tags=["accounts"])
 
 
-@router.get(path="", name="accounts:retrieve-accounts", response_model=list[AccountInResponse])
+@router.get(path="", name="accounts:retrieve-accounts", response_model=list[AccountInResponse], status_code=fastapi.status.HTTP_200_OK,)
 async def retrieve_accounts(
     account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
 ) -> list[AccountInResponse]:
