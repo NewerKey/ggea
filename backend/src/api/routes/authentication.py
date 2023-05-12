@@ -191,7 +191,7 @@ async def validate_credentials_and_otp(
 
 
 @router.post(
-    path="/otp/generate",
+    path="/otp",
     name="auth:otp-generate",
     response_model=dict,
     status_code=fastapi.status.HTTP_200_OK,
@@ -208,7 +208,7 @@ async def generate_otp(
     return {"otp_secret": otp_secret, "otp_auth_url": otp_auth_url}
 
 
-@router.post(
+@router.put(
     path="/otp/verify",
     name="auth:otp-verify",
     response_model=dict,
@@ -233,7 +233,7 @@ async def verify_otp(
     return {"message": "OTP Token Verified"}
 
 
-@router.post(
+@router.put(
     path="/otp/validate",
     name="auth:otp-validate",
     response_model=AccountInResponse,
