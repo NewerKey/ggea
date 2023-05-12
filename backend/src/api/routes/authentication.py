@@ -23,9 +23,10 @@ from src.models.schema.account import (
     AccountInSignup,
     AccountInSignupResponse,
     AccountInStateUpdate,
+    AccountInVerification,
+    AccountOutVerification,
     AccountWithToken,
 )
-from src.models.schema.email import EmailInVerification
 from src.models.schema.otp import OtpIn, OtpInGenerateResponse, OtpInVerifyResponse
 from src.repository.crud.account import AccountCRUDRepository
 from src.repository.crud.profile import ProfileCRUDRepository
@@ -115,21 +116,21 @@ async def account_singin_endpoint(
 @router.post(
     path="/account_verfication",
     name="auth:account-verfication",
-    response_model=dict,
+    response_model=AccountOutVerification,
     status_code=fastapi.status.HTTP_200_OK,
 )
 @limiter.limit("5/120seconds")
 async def account_verification(
     request: fastapi.Request,
-    email_in_verification: EmailInVerification = fastapi.Body(..., embed=True),
+    account_in_verification: AccountInVerification = fastapi.Body(..., embed=True),
     account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
 ) -> dict:
     try:
-        is_verified = await account_crud.verify_account(email_in_verification=email_in_verification)
+        is_verified = await account_crud.verify_account(account_in_verification=account_in_verification)
     except BaseException as e:
         raise await http_exc_400_bad_request(error_msg=e.error_msg)
 
-    return {"is_verified": is_verified}
+    return AccountOutVerification(email=account_in_verification.email, is_verified=is_verified)
 
 
 @router.post(
@@ -225,7 +226,7 @@ async def verify_otp(
         raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
 
     await account_repo.update_account(
-       AccountInRead(id=current_account.id), account_update=AccountInStateUpdate(is_otp_verified=True)
+        AccountInRead(id=current_account.id), account_update=AccountInStateUpdate(is_otp_verified=True)
     )
 
     return {"message": "OTP Token Verified"}
@@ -252,7 +253,7 @@ async def validate_otp(
     if not current_account.is_logged_in:
         raise await http_exc_403_forbidden_request(error_msg="Account credentials not verified")
 
-    if not current_account.otp_loggin_allowed:
+    if not current_account.otp_loggin_allowed():
         raise await http_exc_403_forbidden_request(error_msg="Account credentials verifeid too long ago, login again")
 
     if not two_factor_auth.validate_otp(otp_token=otp_in_validate.otp_token, otp_secret=current_account.otp_secret):

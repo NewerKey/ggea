@@ -107,3 +107,13 @@ class AccountInSignoutResponse(BaseSchemaModel):
 
 class AccountInDeletionResponse(BaseSchemaModel):
     is_deleted: bool
+
+
+class AccountInVerification(BaseSchemaModel):
+    email: pydantic.EmailStr
+    verification_code: int
+
+
+class AccountOutVerification(BaseSchemaModel):
+    email: pydantic.EmailStr
+    is_verified: bool

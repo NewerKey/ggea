@@ -1,7 +1,7 @@
+import datetime
 import typing
 import uuid
 from random import randint
-import datetime
 
 import fastapi
 import loguru
@@ -17,10 +17,10 @@ from src.models.schema.account import (
     AccountInSignin,
     AccountInSignout,
     AccountInSignup,
-    AccountInUpdate,
     AccountInStateUpdate,
+    AccountInUpdate,
+    AccountInVerification,
 )
-from src.models.schema.email import EmailInVerification
 from src.repository.crud.base import BaseCRUDRepository
 from src.security.authorizations import two_factor_auth
 from src.utility.exceptions.custom import (
@@ -240,10 +240,12 @@ class AccountCRUDRepository(BaseCRUDRepository):
 
         if not db_account.is_password_verified(password=account_signin.password):
             raise PasswordDoesNotMatch("Password does not match! Please try again.")
-        
+
         db_account = await self.update_account(
             AccountInRead(id=db_account.id),
-            account_update=AccountInStateUpdate(is_logged_in=True, credentials_validated_at=datetime.datetime.utcnow()),
+            account_update=AccountInStateUpdate(
+                is_logged_in=True, credentials_validated_at=datetime.datetime.utcnow()
+            ),
         )
 
         # update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=True)
@@ -294,8 +296,8 @@ class AccountCRUDRepository(BaseCRUDRepository):
 
         return db_account.is_otp_enabled
 
-    async def verify_account(self, email_in_verification: EmailInVerification) -> bool:
-        db_account = await self._read_account_by_email(email=email_in_verification.email)
+    async def verify_account(self, account_in_verification: AccountInVerification) -> bool:
+        db_account = await self._read_account_by_email(email=account_in_verification.email)
 
         if not db_account:
             raise EntityDoesNotExist(f"Account with email does not exist!")
@@ -303,7 +305,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         if db_account.is_verified:
             raise AccountIsAlreadyVerified("Account is already verified!")
 
-        if db_account.verification_code != email_in_verification.verification_code:
+        if db_account.verification_code != account_in_verification.verification_code:
             raise VerificationCodeDoesNotMatch("Verification code does not match!")
 
         else:
