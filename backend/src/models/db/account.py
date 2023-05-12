@@ -48,7 +48,7 @@ class Account(DBBaseTable):
         server_onupdate=sqlalchemy.schema.FetchedValue(for_update=True),
     )
     credentials_validated_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
-        sqlalchemy.DateTime(timezone=True), nullable=True
+        sqlalchemy.DateTime(timezone=True), nullable=True, default=(datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc) - datetime.timedelta(minutes=5))
     )
     profile = sqlalchemy_relationship("Profile", uselist=False, back_populates="account")
 
