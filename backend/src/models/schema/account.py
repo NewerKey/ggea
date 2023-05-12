@@ -71,7 +71,7 @@ class AccountInStateUpdate(BaseSchemaModel):
     is_admin: bool | None
     is_otp_enabled: bool | None
     is_otp_verified: bool | None
-    logged_in_at: datetime.datetime | None
+    credentials_validated_at: datetime.datetime | None
 
 
 class AccountWithToken(BaseSchemaModel):
@@ -86,7 +86,7 @@ class AccountWithToken(BaseSchemaModel):
     is_otp_verified: bool
     created_at: datetime.datetime
     updated_at: datetime.datetime | None
-    logged_in_at: datetime.datetime | None
+    credentials_validated_at: datetime.datetime | None
 
 
 class AccountInResponse(BaseSchemaModel):
