@@ -102,14 +102,15 @@ async def account_singin_endpoint(
         raise await http_exc_400_bad_request(error_msg=e.error_msg)
 
     if logged_in_account.is_otp_enabled and logged_in_account.is_otp_verified:
-        return AccountInResponse(authorized_account=None, is_otp_required=True)
+        raise await http_exc_401_unauthorized_request(
+            error_msg="Valid credentials but a OTP is required to finished the signin process"
+        )
 
     jwt_token = jwt_manager.generate_jwt(account=logged_in_account)
     return AccountInResponse(
         authorized_account=AccountWithToken(
             token=jwt_token, hashed_password=logged_in_account.hashed_password, **logged_in_account.__dict__
-        ),
-        is_otp_required=False,
+        )
     )
 
 

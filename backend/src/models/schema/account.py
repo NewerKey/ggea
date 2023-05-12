@@ -91,7 +91,6 @@ class AccountWithToken(BaseSchemaModel):
 
 class AccountInResponse(BaseSchemaModel):
     authorized_account: AccountWithToken | None
-    is_otp_required: bool
 
 
 class AccountInSignupResponse(BaseSchemaModel):
