@@ -101,10 +101,6 @@ async def account_singin_endpoint(
         raise await http_exc_400_bad_request(error_msg=e.error_msg)
 
     if logged_in_account.is_otp_enabled and logged_in_account.is_otp_verified:
-        await account_crud.update_account_by_id(
-            id=logged_in_account.id,
-            account_update=AccountInStateUpdate(is_logged_in=True, credentials_validated_at=datetime.datetime.utcnow()),
-        )
         return AccountInResponse(authorized_account=None, is_otp_required=True)
 
     jwt_token = jwt_manager.generate_jwt(account=logged_in_account)
@@ -256,7 +252,7 @@ async def validate_otp(
     if not current_account.is_logged_in:
         raise await http_exc_403_forbidden_request(error_msg="Account credentials not verified")
 
-    if current_account.otp_loggin_allowed:
+    if not current_account.otp_loggin_allowed:
         raise await http_exc_403_forbidden_request(error_msg="Account credentials verifeid too long ago, login again")
 
     if not two_factor_auth.validate_otp(otp_token=otp_in_validate.otp_token, otp_secret=current_account.otp_secret):

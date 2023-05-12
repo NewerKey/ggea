@@ -1,6 +1,7 @@
 import typing
 import uuid
 from random import randint
+import datetime
 
 import fastapi
 import loguru
@@ -17,6 +18,7 @@ from src.models.schema.account import (
     AccountInSignout,
     AccountInSignup,
     AccountInUpdate,
+    AccountInStateUpdate,
 )
 from src.models.schema.email import EmailInVerification
 from src.repository.crud.base import BaseCRUDRepository
@@ -270,11 +272,17 @@ class AccountCRUDRepository(BaseCRUDRepository):
 
         if not db_account.is_password_verified(password=account_signin.password):
             raise PasswordDoesNotMatch("Password does not match! Please try again.")
-        update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=True)
-        await self.async_session.execute(statement=update_stmt)
-        await self.async_session.commit()
-        await self.async_session.refresh(instance=db_account)
-        await self.async_session.close()
+        
+        db_account = await self.update_account_by_id(
+            id=account_signin.id,
+            account_update=AccountInStateUpdate(is_logged_in=True, credentials_validated_at=datetime.datetime.utcnow()),
+        )
+
+        # update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=True)
+        # await self.async_session.execute(statement=update_stmt)
+        # await self.async_session.commit()
+        # await self.async_session.refresh(instance=db_account)
+        # await self.async_session.close()
         return db_account
 
     async def signin_oauth_account(self, account_signin: AccountInOAuthSignIn) -> Account:
