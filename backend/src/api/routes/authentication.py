@@ -12,9 +12,9 @@ from slowapi.util import get_remote_address
 from sqlalchemy.sql import functions as sqlalchemy_functions
 
 from src.api.dependency.crud import get_crud
+from src.api.dependency.header import get_auth_current_user
 from src.models.db.account import Account
 from src.models.schema.account import (
-    AccountInOAuthSignIn,
     AccountInRead,
     AccountInResponse,
     AccountInSignin,
@@ -33,7 +33,6 @@ from src.repository.crud.account import AccountCRUDRepository
 from src.repository.crud.profile import ProfileCRUDRepository
 from src.security.authorizations import two_factor_auth
 from src.security.authorizations.jwt import jwt_manager
-from src.security.authorizations.oauth2 import oauth2_get_current_user
 from src.utility.email.email_sender import send_email_background
 from src.utility.exceptions.base_exception import BaseException
 from src.utility.exceptions.custom import EmailAlreadyExists, UsernameAlreadyExists
@@ -154,41 +153,41 @@ async def account_logout_endpoint(
     )
 
 
-@router.post("/validate_credentials_and_otp", response_model=typing.Any)
-async def validate_credentials_and_otp(
-    form_data: fastapi.security.OAuth2PasswordRequestForm = fastapi.Depends(),
-    account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
-) -> typing.Any:
-    #! This is bad smell
-    # I need to know if the account has 2FA enabled or not before I can validate the password,
-    # because the password is passed together with the OTP token in the same field.
+# @router.post("/token", response_model=typing.Any)
+# async def validate_credentials_and_otp(
+#     form_data: fastapi.security.OAuth2PasswordRequestForm = fastapi.Depends(),
+#     account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
+# ) -> typing.Any:
+#     #! This is bad smell
+# I need to know if the account has 2FA enabled or not before I can validate the password,
+# because the password is passed together with the OTP token in the same field.
 
-    # is_otp_enabled = await account_repo.is_otp_enabled(username=form_data.username)
+# is_otp_enabled = await account_repo.is_otp_enabled(username=form_data.username)
 
-    # loguru.logger.debug(f"Is OTP enabled: {is_otp_enabled}")
-    # if is_otp_enabled:
-    #     password, otp_token = two_factor_auth.separate_password_and_otp(form_data.password)
+# loguru.logger.debug(f"Is OTP enabled: {is_otp_enabled}")
+# if is_otp_enabled:
+#     password, otp_token = two_factor_auth.separate_password_and_otp(form_data.password)
 
-    # else:
-    #     password = form_data.password
+# else:
+#     password = form_data.password
 
-    account_in_db = await account_repo.signin_oauth_account(
-        AccountInOAuthSignIn(username=form_data.username, password=form_data.password)
-    )
-    if not account_in_db:
-        raise await http_exc_403_forbidden_request(error_msg="Invalid credentials")
+# account_in_db = await account_repo.signin_account(
+#     AccountInSignin(username=form_data.username, password=form_data.password)
+# )
+# if not account_in_db:
+#     raise await http_exc_403_forbidden_request(error_msg="Invalid credentials")
 
-        # if account_in_db.is_otp_enabled:
-        #     is_token_valid = two_factor_auth.validate_otp(otp_token, account_in_db.otp_secret)
+# if account_in_db.is_otp_enabled:
+#     is_token_valid = two_factor_auth.validate_otp(otp_token, account_in_db.otp_secret)
 
-        # if not is_token_valid:
-        #     raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
+# if not is_token_valid:
+#     raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
 
-    logged_in_account = AccountInRead(**account_in_db.__dict__)
+# logged_in_account = AccountInRead(**account_in_db.__dict__)
 
-    jwt_token = jwt_manager.generate_jwt(account=logged_in_account)
+# jwt_token = jwt_manager.generate_jwt(account=logged_in_account)
 
-    return {"access_token": jwt_token, "token_type": "bearer"}
+# return {"access_token": jwt_token, "token_type": "bearer"}
 
 
 @router.post(
@@ -199,7 +198,7 @@ async def validate_credentials_and_otp(
 )
 async def generate_otp(
     account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
-    current_account: Account = fastapi.Depends(oauth2_get_current_user),
+    current_account: Account = fastapi.Depends(get_auth_current_user()),
 ) -> OtpInGenerateResponse:
     updated_account, otp_secret, otp_auth_url = await account_repo.set_otp_details(account=current_account)
 
@@ -218,7 +217,7 @@ async def generate_otp(
 async def verify_otp(
     otp_in_verify: OtpIn = fastapi.Body(..., embed=True),
     account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
-    current_account: Account = fastapi.Depends(oauth2_get_current_user),
+    current_account: Account = fastapi.Depends(get_auth_current_user()),
 ) -> ActionSuccessResponse:
     if not otp_in_verify.email == current_account.email:
         raise await http_exc_403_forbidden_request(error_msg="Invalid email")
