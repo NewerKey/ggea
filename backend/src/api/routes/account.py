@@ -8,14 +8,15 @@ from src.models.db.account import Account
 from src.models.schema.account import AccountInDeletionResponse, AccountInResponse, AccountInUpdate, AccountWithToken
 from src.repository.crud.account import AccountCRUDRepository
 from src.security.authorizations.jwt import jwt_manager
+from src.utility.exceptions.base_exception import BaseException
 from src.utility.exceptions.custom import EntityDoesNotExist
-from src.utility.exceptions.http.http_5xx import http_exc_500_internal_server_error
 from src.utility.exceptions.http.http_4xx import (
     http_exc_400_bad_request,
     http_exc_401_unauthorized_request,
     http_exc_403_forbidden_request,
     http_exc_404_resource_not_found,
 )
+from src.utility.exceptions.http.http_5xx import http_exc_500_internal_server_error
 
 router = fastapi.APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -38,8 +39,8 @@ async def retrieve_accounts(
             )
             db_account_list.append(account)
         return db_account_list
-    
-    except Exception as e:
+
+    except BaseException as e:
         raise await http_exc_500_internal_server_error(error_msg=e.error_msg)
 
 

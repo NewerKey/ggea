@@ -33,6 +33,7 @@ from src.security.authorizations import two_factor_auth
 from src.security.authorizations.jwt import jwt_manager
 from src.security.authorizations.oauth2 import oauth2_get_current_user
 from src.utility.email.email_sender import send_email_background
+from src.utility.exceptions.base_exception import BaseException
 from src.utility.exceptions.custom import EmailAlreadyExists, UsernameAlreadyExists
 from src.utility.exceptions.http.http_4xx import (
     http_exc_400_bad_request,
@@ -69,7 +70,7 @@ async def account_signup_endpoint(
         new_account = await account_crud.create_account(account_signup=account_signup)
         new_profile = await profile_crud.create_profile(parent_account=new_account)
 
-    except Exception as e:
+    except BaseException as e:
         loguru.logger.error(e)
         raise await http_exc_500_internal_server_error(error_msg="Failed to create account")
 
@@ -96,7 +97,7 @@ async def account_singin_endpoint(
 ) -> AccountInResponse:
     try:
         logged_in_account = await account_crud.signin_account(account_signin=account_signin)
-    except Exception as e:
+    except BaseException as e:
         raise await http_exc_400_bad_request(error_msg=e.error_msg)
 
     if logged_in_account.is_otp_enabled and logged_in_account.is_otp_verified:
@@ -129,8 +130,8 @@ async def account_verification(
 ) -> dict:
     try:
         is_verified = await account_crud.verify_account(email_in_verification=email_in_verification)
-    except Exception as e:
-        raise await http_exc_400_bad_request(error_msg=e)
+    except BaseException as e:
+        raise await http_exc_400_bad_request(error_msg=e.error_msg)
 
     return {"is_verified": is_verified}
 
@@ -147,8 +148,8 @@ async def account_logout_endpoint(
 ) -> AccountInSignoutResponse:
     try:
         logged_out_account = await account_crud.signout_account(account_signout=account_signout)
-    except Exception as e:
-        raise await http_exc_400_bad_request(error_msg=e)
+    except BaseException as e:
+        raise await http_exc_400_bad_request(error_msg=e.error_msg)
     return AccountInSignoutResponse(
         username=logged_out_account.username, is_logged_out=logged_out_account.is_logged_in
     )
@@ -178,11 +179,11 @@ async def validate_credentials_and_otp(
     if not account_in_db:
         raise await http_exc_403_forbidden_request(error_msg="Invalid credentials")
 
-    # if account_in_db.is_otp_enabled:
-    #     is_token_valid = two_factor_auth.validate_otp(otp_token, account_in_db.otp_secret)
+        # if account_in_db.is_otp_enabled:
+        #     is_token_valid = two_factor_auth.validate_otp(otp_token, account_in_db.otp_secret)
 
-        if not is_token_valid:
-            raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
+        # if not is_token_valid:
+        #     raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
 
     logged_in_account = AccountInRead(**account_in_db.__dict__)
 
@@ -246,7 +247,7 @@ async def validate_otp(
 ) -> AccountInResponse:
     try:
         current_account = await account_repo.read_account(AccountInRead(email=otp_in_validate.email))
-    except Exception:
+    except BaseException:
         raise await http_exc_400_bad_request(error_msg="Invalid email")
 
     if not current_account.is_otp_verified:

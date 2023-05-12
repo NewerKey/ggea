@@ -22,11 +22,11 @@ from src.models.schema.email import EmailInVerification
 from src.repository.crud.base import BaseCRUDRepository
 from src.security.authorizations import two_factor_auth
 from src.utility.exceptions.custom import (
+    AccountIsAlreadyVerified,
     AccountIsNotVerified,
     EntityDoesNotExist,
     FailedToSaveAccount,
     PasswordDoesNotMatch,
-    AccountIsAlreadyVerified,
     VerificationCodeDoesNotMatch,
 )
 from src.utility.exceptions.database import DatabaseError
@@ -48,9 +48,10 @@ class AccountCRUDRepository(BaseCRUDRepository):
             await self.async_session.refresh(instance=new_account)
             await self.async_session.close()
 
-        except:
+        except Exception as e:
             await self.async_session.rollback()
-            raise FailedToSaveAccount
+            loguru.logger.error(e)
+            raise FailedToSaveAccount(error_msg="Failed to create account")
 
         return new_account
 
@@ -178,8 +179,8 @@ class AccountCRUDRepository(BaseCRUDRepository):
 
         except Exception as e:
             await self.async_session.rollback()
-            await self.async_session.close()
-            raise DatabaseError
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to update account in database!")
 
     async def update_account_by_username(self, username: str, account_update: AccountInUpdate) -> Account:
         update_data = account_update.dict(exclude_unset=True)
@@ -298,7 +299,9 @@ class AccountCRUDRepository(BaseCRUDRepository):
     async def signout_account(self, account_signout: AccountInSignout) -> Account:
         try:
             db_account = await self._read_account_by_id(id=account_signout.id)  # type: ignore
-            update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=False)
+            update_stmt = (
+                sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=False)
+            )
             await self.async_session.execute(statement=update_stmt)
             await self.async_session.commit()
             await self.async_session.refresh(instance=db_account)

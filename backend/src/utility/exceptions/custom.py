@@ -1,5 +1,6 @@
 from src.utility.exceptions.base_exception import BaseException
 
+
 class EntityDoesNotExist(BaseException):
     """
     Throw an exception when the dentity does not exist in the database.
@@ -35,10 +36,12 @@ class AccountIsNotVerified(BaseException):
     Throw an error if Account is not verified.
     """
 
+
 class AccountIsAlreadyVerified(BaseException):
     """
     Throw an error if Account is already verified.
     """
+
 
 class VerificationCodeDoesNotMatch(BaseException):
     """
