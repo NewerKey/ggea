@@ -1,7 +1,7 @@
-from sqlalchemy import exc as sqlalchemy_error
+from src.utility.exceptions.base_exception import BaseException
 
 
-class DatabaseError(sqlalchemy_error.DatabaseError):
+class DatabaseError(BaseException):
     """
     Throw an exception when there is an error in the database.
     """

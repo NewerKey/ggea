@@ -24,10 +24,9 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             await self.async_session.refresh(instance=new_profile)
             await self.async_session.close()
             return new_profile
-        except DatabaseError as e:
-            loguru.logger.error("Error in create_profile(): %s", e)
-            # TODO: Returning custom error message to client
-            raise e
+        except Exception as e:
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to create profile")
 
     async def read_profiles(self) -> typing.Sequence[Profile]:
         stmt = sqlalchemy.select(Profile)
@@ -40,29 +39,25 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             query = await self.async_session.execute(statement=stmt)
 
             if not query:
-                raise EntityDoesNotExist
+                raise EntityDoesNotExist(error_msg=f"Profile with that ID does not exist")
 
             return query.scalar()
-        except DatabaseError as e:
-            loguru.logger.error("Error in read_profile_by_id(): %s", e)
-            # TODO: Returning custom error message to client
-            raise e
+        except Exception as e:
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to read profile by id")
 
     async def read_profile_by_account_id(self, account_id: int) -> Profile:
         try:
-            loguru.logger.info("Trying to read profile by account id: %s", account_id)
             stmt = sqlalchemy.select(Profile).where(Profile.account_id == account_id)
             query = await self.async_session.execute(statement=stmt)
 
             if not query:
-                loguru.logger.error("Failed to read profile by account id: %s", account_id)
-                raise EntityDoesNotExist
+                raise EntityDoesNotExist(error_msg=f"Profile related to that account ID does not exist")
 
             return query.scalar()
-        except DatabaseError as e:
-            loguru.logger.error("Error in read_profile_by_id(): %s", e)
-            # TODO: Returning custom error message to client
-            raise e
+        except Exception as e:
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to read profile by account id")
 
     async def read_profile_by_first_name(self, first_name: str) -> Profile:
         try:
@@ -70,13 +65,12 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             query = await self.async_session.execute(statement=stmt)
 
             if not query:
-                raise EntityDoesNotExist
+                raise EntityDoesNotExist(error_msg=f"Profile with that first name does not exist")
 
             return query.scalar()
-        except DatabaseError as e:
-            loguru.logger.error("Error in read_profile_by_first_name(): %s", e)
-            # TODO: Returning custom error message to client
-            raise e
+        except Exception as e:
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to read profile by first name")
 
     async def read_profile_by_last_name(self, last_name: str) -> Profile:
         try:
@@ -84,20 +78,19 @@ class ProfileCRUDRepository(BaseCRUDRepository):
             query = await self.async_session.execute(statement=stmt)
 
             if not query:
-                raise EntityDoesNotExist
+                raise EntityDoesNotExist(error_msg=f"Profile with that last name does not exist")
 
             return query.scalar()
-        except DatabaseError as e:
-            loguru.logger.error("Error in read_profile_by_last_name(): %s", e)
-            # TODO: Returning custom error message to client
-            raise e
+        except Exception as e:
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to read profile by last name")
 
     async def update_profile_by_id(self, id: uuid.UUID, profile_update: ProfileInUpdate) -> Profile:
         new_profile_data = profile_update.dict(exclude_unset=True)
         current_profile = await self.read_profile_by_id(id)
 
         if not current_profile:
-            raise EntityDoesNotExist(f"Profile with id '{id}' does not exist!")  # type: ignore
+            raise EntityDoesNotExist(f"Profile with that ID does not exist!")  # type: ignore
 
         update_stmt = (
             sqlalchemy.update(table=Profile)
@@ -126,23 +119,12 @@ class ProfileCRUDRepository(BaseCRUDRepository):
 
             return current_profile
 
-        except DatabaseError as e:
-            loguru.logger.error("Error in update_profile_by_id() while trying to write changes: %s", e)
-            # TODO: Returning custom error message to client
-            raise e
+        except Exception as e:
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to update profile by id")
 
-    async def delete_profile_by_id(self, id: int) -> str:
-        try:
-            select_stmt = sqlalchemy.select(Profile).where(Profile.id == id)
-            query = self.async_session.execute(select_stmt)
-            delete_profile = query.scalar()
-        except DatabaseError as e:
-            loguru.logger.error("Error in delete_profile_by_id() while querying for profile: %s", e)
-            # TODO: Returning custom error message to client
-            raise e
-
-        if not delete_profile:
-            raise EntityDoesNotExist(f"Profile with id '{id}' does not exist!")
+    async def delete_profile_by_id(self, id: uuid.UUID) -> str:
+        delete_profile = await self.read_profile_by_id(id)
 
         try:
             delete_stmt = sqlalchemy.delete(Profile).where(Profile.id == delete_profile.id)
@@ -152,7 +134,6 @@ class ProfileCRUDRepository(BaseCRUDRepository):
 
             return f"Profile with id '{id}' is successfully deleted!"
 
-        except DatabaseError as e:
-            loguru.logger.error("Error in delete_profile_by_id() while executing delete statement: %s", e)
-            # TODO: Returning custom error message to client
-            raise e
+        except Exception as e:
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to delete profile by id")

@@ -22,10 +22,12 @@ from src.models.schema.email import EmailInVerification
 from src.repository.crud.base import BaseCRUDRepository
 from src.security.authorizations import two_factor_auth
 from src.utility.exceptions.custom import (
+    AccountIsAlreadyVerified,
     AccountIsNotVerified,
     EntityDoesNotExist,
     FailedToSaveAccount,
     PasswordDoesNotMatch,
+    VerificationCodeDoesNotMatch,
 )
 from src.utility.exceptions.database import DatabaseError
 from src.utility.exceptions.http.exc_400 import http_exc_400_credentials_bad_signup_request
@@ -46,9 +48,10 @@ class AccountCRUDRepository(BaseCRUDRepository):
             await self.async_session.refresh(instance=new_account)
             await self.async_session.close()
 
-        except:
+        except Exception as e:
             await self.async_session.rollback()
-            raise FailedToSaveAccount
+            loguru.logger.error(e)
+            raise FailedToSaveAccount(error_msg="Failed to create account")
 
         return new_account
 
@@ -84,9 +87,13 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return True
 
     async def read_accounts(self) -> Accounts:
-        select_stmt = sqlalchemy.select(Account).options(sqlalchemy_selectinload("*"))
-        query = await self.async_session.execute(statement=select_stmt)
-        return query.scalars().all()
+        try:
+            select_stmt = sqlalchemy.select(Account).options(sqlalchemy_selectinload("*"))
+            query = await self.async_session.execute(statement=select_stmt)
+            return query.scalars().all()
+        except Exception as e:
+            loguru.logger.error(e)
+            raise DatabaseError("Failed to read accounts from database!")
 
     async def read_account(self, account_in_read: AccountInRead) -> Account:
         if account_in_read.id:
@@ -172,8 +179,8 @@ class AccountCRUDRepository(BaseCRUDRepository):
 
         except Exception as e:
             await self.async_session.rollback()
-            await self.async_session.close()
-            raise DatabaseError
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to update account in database!")
 
     async def update_account_by_username(self, username: str, account_update: AccountInUpdate) -> Account:
         update_data = account_update.dict(exclude_unset=True)
@@ -290,12 +297,18 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return db_account
 
     async def signout_account(self, account_signout: AccountInSignout) -> Account:
-        db_account = await self._read_account_by_id(id=account_signout.id)  # type: ignore
-        update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=False)
-        await self.async_session.execute(statement=update_stmt)
-        await self.async_session.commit()
-        await self.async_session.refresh(instance=db_account)
-        return db_account
+        try:
+            db_account = await self._read_account_by_id(id=account_signout.id)  # type: ignore
+            update_stmt = (
+                sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=False)
+            )
+            await self.async_session.execute(statement=update_stmt)
+            await self.async_session.commit()
+            await self.async_session.refresh(instance=db_account)
+            return db_account
+        except Exception:
+            await self.async_session.rollback()
+            raise Exception("Failed to signout account, try again!")
 
     async def is_otp_enabled(self, username: str) -> bool:
         db_account = await self._read_account_by_username(username=username)
@@ -312,10 +325,10 @@ class AccountCRUDRepository(BaseCRUDRepository):
             raise EntityDoesNotExist(f"Account with email does not exist!")
 
         if db_account.is_verified:
-            return True
+            raise AccountIsAlreadyVerified("Account is already verified!")
 
         if db_account.verification_code != email_in_verification.verification_code:
-            return False
+            raise VerificationCodeDoesNotMatch("Verification code does not match!")
 
         else:
             update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_verified=True)
