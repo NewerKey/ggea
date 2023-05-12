@@ -151,12 +151,12 @@ class AccountCRUDRepository(BaseCRUDRepository):
             raise EntityDoesNotExist(f"Account with email `{email}` does not exist!")
         return query.scalar()  # type: ignore
 
-    async def update_account_by_id(self, id: uuid.UUID, account_update: AccountForUpdate) -> Account:
+    async def update_account(self, account_in_read: AccountInRead, account_update: AccountForUpdate) -> Account:
         update_data = account_update.dict(exclude_unset=True)
-        db_account = await self.read_account(account_in_read=AccountInRead(id=id))
+        db_account = await self.read_account(account_in_read=account_in_read)
 
         if not db_account:
-            raise EntityDoesNotExist(f"Account with that iddoes not exist!")  # type: ignore
+            raise EntityDoesNotExist(f"Account with that details does not exist!")  # type: ignore
 
         update_stmt = (
             sqlalchemy.update(table=Account)
@@ -183,38 +183,6 @@ class AccountCRUDRepository(BaseCRUDRepository):
             await self.async_session.rollback()
             loguru.logger.error(e)
             raise DatabaseError(error_msg="Failed to update account in database!")
-
-    async def update_account_by_username(self, username: str, account_update: AccountInUpdate) -> Account:
-        update_data = account_update.dict(exclude_unset=True)
-        db_account = await self._read_account_by_username(username=username)
-
-        if not db_account:
-            raise EntityDoesNotExist(f"Account with username `{username}` does not exist!")  # type: ignore
-
-        update_stmt = (
-            sqlalchemy.update(table=Account)
-            .where(Account.username == db_account.username)
-            .values(updated_at=sqlalchemy_functions.now())
-        )  # type: ignore
-
-        if update_data["username"]:
-            update_stmt = update_stmt.values(username=update_data["username"])
-        if update_data["email"]:
-            update_stmt = update_stmt.values(email=update_data["email"])
-        if update_data["password"]:
-            salt, password = db_account.set_password(password=update_data["password"])
-            update_stmt = update_stmt.values(hashed_salt=salt, hashed_password=password)
-
-        for key, value in update_data.items():
-            update_stmt = update_stmt.values(**{key: value})
-
-        try:
-            await self.async_session.execute(statement=update_stmt)
-            await self.async_session.commit()
-            await self.async_session.refresh(instance=db_account)
-            return db_account
-        except sqlalchemy.exc.DataError as e:
-            raise fastapi.HTTPException(status_code=400, detail=str(e))
 
     async def set_otp_details(self, account: Account) -> tuple[Account, str, str]:
         db_account = await self._read_account_by_id(id=account.id)
@@ -273,8 +241,8 @@ class AccountCRUDRepository(BaseCRUDRepository):
         if not db_account.is_password_verified(password=account_signin.password):
             raise PasswordDoesNotMatch("Password does not match! Please try again.")
         
-        db_account = await self.update_account_by_id(
-            id=account_signin.id,
+        db_account = await self.update_account(
+            AccountInRead(id=db_account.id),
             account_update=AccountInStateUpdate(is_logged_in=True, credentials_validated_at=datetime.datetime.utcnow()),
         )
 

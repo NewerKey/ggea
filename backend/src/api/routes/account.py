@@ -5,7 +5,7 @@ import fastapi
 from src.api.dependency.crud import get_crud
 from src.api.dependency.header import get_auth_current_user
 from src.models.db.account import Account
-from src.models.schema.account import AccountInDeletionResponse, AccountInResponse, AccountInUpdate, AccountWithToken
+from src.models.schema.account import AccountInDeletionResponse, AccountInResponse, AccountInUpdate, AccountWithToken, AccountInRead
 from src.repository.crud.account import AccountCRUDRepository
 from src.security.authorizations.jwt import jwt_manager
 from src.utility.exceptions.base_exception import BaseException
@@ -85,7 +85,7 @@ async def edit_current_user_by_id(
         if not await account_crud.is_credentials_available(account_input=account_update):
             raise await http_exc_400_bad_request(error_msg="Username or email already taken")
 
-    updated_db_account = await account_crud.update_account_by_id(id=current_account.id, account_update=account_update)
+    updated_db_account = await account_crud.update_account(AccountInRead(id=current_account.id), account_update=account_update)
     jwt_token = jwt_manager.generate_jwt(account=updated_db_account)
 
     return AccountInResponse(
@@ -172,8 +172,8 @@ async def edit_current_user(
         if not await account_crud.is_credentials_available(account_input=account_update):
             raise await http_exc_400_bad_request()
 
-    updated_db_account = await account_crud.update_account_by_username(
-        username=current_account.username, account_update=account_update
+    updated_db_account = await account_crud.update_account(
+        AccountInRead(username=current_account.username), account_update=account_update
     )
     jwt_token = jwt_manager.generate_jwt(account=updated_db_account)
 

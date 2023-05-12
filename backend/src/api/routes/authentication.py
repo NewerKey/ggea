@@ -68,7 +68,7 @@ async def account_signup_endpoint(
 
     try:
         new_account = await account_crud.create_account(account_signup=account_signup)
-        new_profile = await profile_crud.create_profile(parent_account=new_account)
+        await profile_crud.create_profile(parent_account=new_account)
 
     except BaseException as e:
         loguru.logger.error(e)
@@ -224,8 +224,8 @@ async def verify_otp(
     if not totp.verify(otp_in_verify.otp_token):
         raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
 
-    await account_repo.update_account_by_id(
-        id=current_account.id, account_update=AccountInStateUpdate(is_otp_verified=True)
+    await account_repo.update_account(
+       AccountInRead(id=current_account.id), account_update=AccountInStateUpdate(is_otp_verified=True)
     )
 
     return {"message": "OTP Token Verified"}
