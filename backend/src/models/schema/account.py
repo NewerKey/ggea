@@ -26,6 +26,13 @@ class AccountInSignup(BaseSchemaModel):
             raise ValueError("Password is not strong enough")
         return v
 
+    @pydantic.validator("username")
+    def username_length(cls, v):
+        loguru.logger.info("Evaluating username length")
+        if len(v) < 4:
+            raise ValueError("Username is too short")
+        return v
+
 
 class AccountInOAuthSignIn(BaseSchemaModel):
     username: str
