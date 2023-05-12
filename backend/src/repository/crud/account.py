@@ -86,9 +86,13 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return True
 
     async def read_accounts(self) -> Accounts:
-        select_stmt = sqlalchemy.select(Account).options(sqlalchemy_selectinload("*"))
-        query = await self.async_session.execute(statement=select_stmt)
-        return query.scalars().all()
+        try:
+            select_stmt = sqlalchemy.select(Account).options(sqlalchemy_selectinload("*"))
+            query = await self.async_session.execute(statement=select_stmt)
+            return query.scalars().all()
+        except Exception as e:
+            loguru.logger.error(e)
+            raise DatabaseError("Failed to read accounts from database!")
 
     async def read_account(self, account_in_read: AccountInRead) -> Account:
         if account_in_read.id:

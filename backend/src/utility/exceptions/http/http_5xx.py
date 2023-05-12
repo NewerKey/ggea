@@ -9,5 +9,5 @@ async def http_exc_500_internal_server_error(error_msg: str) -> Exception:
     """  
     return fastapi.HTTPException(
         status_code=fastapi.status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=msg,
+        detail=error_msg,
     )

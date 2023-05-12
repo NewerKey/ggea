@@ -1,11 +1,4 @@
-class BaseException(Exception):
-    """
-    Base exception class.
-    """
-    def __init__(self, error_msg: str):
-        self.error_msg = error_msg
-
-
+from src.utility.exceptions.base_exception import BaseException
 
 class EntityDoesNotExist(BaseException):
     """
