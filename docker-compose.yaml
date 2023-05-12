@@ -151,6 +151,7 @@ services:
     volumes:
       - ./backend/src/:/usr/backend/src/
       - ./backend/test:/usr/backend/test/
+      - ./backend/tests:/usr/backend/tests/
     expose:
       - 8000
     ports:

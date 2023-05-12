@@ -1,6 +1,7 @@
 # automated tests for the endpoints of the authentication router
 import loguru
 
+
 async def test_signup_success(async_client):
     # arrange & act
     x = await async_client.get("api/v1/accounts")
@@ -14,7 +15,7 @@ async def test_signup_success(async_client):
 
     x = await async_client.get("api/v1/accounts")
     loguru.logger.debug(f"After signup")
-    loguru.logger.debug(x)
+    loguru.logger.debug(x.json())
     assert response.status_code == 201
 
 
