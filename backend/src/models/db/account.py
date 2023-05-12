@@ -48,7 +48,9 @@ class Account(DBBaseTable):
         server_onupdate=sqlalchemy.schema.FetchedValue(for_update=True),
     )
     credentials_validated_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
-        sqlalchemy.DateTime(timezone=True), nullable=True, default=(datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc) - datetime.timedelta(minutes=5))
+        sqlalchemy.DateTime(timezone=True),
+        nullable=True,
+        default=(datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc) - datetime.timedelta(minutes=5)),
     )
     profile = sqlalchemy_relationship("Profile", uselist=False, back_populates="account")
 
@@ -75,8 +77,8 @@ class Account(DBBaseTable):
 
     def is_password_verified(self, password: str) -> bool:
         return pwd_manager.is_hashed_password_verified(hashed_salt=self.hashed_salt, password=password, hashed_password=self.hashed_password)  # type: ignore
-    
+
     def otp_loggin_allowed(self, max_time_passed: int = 5) -> bool:
         return self.credentials_validated_at.replace(tzinfo=datetime.timezone.utc) + datetime.timedelta(
-        minutes=max_time_passed
+            minutes=max_time_passed
         ) < datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
