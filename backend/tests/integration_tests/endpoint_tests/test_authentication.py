@@ -64,7 +64,7 @@ async def test_signin_success(async_client):
     await async_client.post("api/v1/auth/signup", json={"account_signup": user_object})
 
     # act
-    response = await async_client.post("api/v1/auth/signin", json={"account_signin": user_object})
+    response = await async_client.post("api/v1/auth/signin", json={"account_signin": {"username": "signin_user", "password": "!1Password"}})
 
     # assert
     assert response.status_code == 202
@@ -93,4 +93,4 @@ async def test_signin_failure_wrong_password(async_client):
     )
 
     # assert
-    assert response.status_code == 422
+    assert response.status_code == 400
