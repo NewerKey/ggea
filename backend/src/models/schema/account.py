@@ -71,7 +71,7 @@ class AccountInStateUpdate(BaseSchemaModel):
     is_admin: bool | None
     is_otp_enabled: bool | None
     is_otp_verified: bool | None
-    logged_in_at: datetime.datetime | None
+    credentials_validated_at: datetime.datetime | None
 
 
 class AccountWithToken(BaseSchemaModel):
@@ -79,21 +79,18 @@ class AccountWithToken(BaseSchemaModel):
     token: str
     username: str
     email: pydantic.EmailStr
-    hashed_password: str
     is_verified: bool
     is_logged_in: bool
     is_admin: bool
     is_otp_enabled: bool
     is_otp_verified: bool
-    otp_secret: str | None
-    otp_auth_url: str | None
     created_at: datetime.datetime
     updated_at: datetime.datetime | None
+    credentials_validated_at: datetime.datetime | None
 
 
 class AccountInResponse(BaseSchemaModel):
     authorized_account: AccountWithToken | None
-    is_otp_required: bool
 
 
 class AccountInSignupResponse(BaseSchemaModel):
@@ -109,3 +106,13 @@ class AccountInSignoutResponse(BaseSchemaModel):
 
 class AccountInDeletionResponse(BaseSchemaModel):
     is_deleted: bool
+
+
+class AccountInVerification(BaseSchemaModel):
+    email: pydantic.EmailStr
+    verification_code: int
+
+
+class AccountOutVerification(BaseSchemaModel):
+    email: pydantic.EmailStr
+    is_verified: bool
