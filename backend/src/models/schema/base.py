@@ -14,3 +14,8 @@ class BaseSchemaModel(pydantic.BaseModel):
         allow_population_by_field_name: bool = True
         json_encoders: dict = {datetime.datetime: datetime_2_isoformat}
         alias_generator: typing.Any = snake_2_camel
+
+
+class ActionSuccessResponse(BaseSchemaModel):
+    action: str
+    success: bool

@@ -27,6 +27,7 @@ from src.models.schema.account import (
     AccountOutVerification,
     AccountWithToken,
 )
+from src.models.schema.base import ActionSuccessResponse
 from src.models.schema.otp import OtpIn, OtpInGenerateResponse, OtpInVerifyResponse
 from src.repository.crud.account import AccountCRUDRepository
 from src.repository.crud.profile import ProfileCRUDRepository
@@ -193,32 +194,32 @@ async def validate_credentials_and_otp(
 @router.post(
     path="/otp",
     name="auth:otp-generate",
-    response_model=dict,
+    response_model=OtpInGenerateResponse,
     status_code=fastapi.status.HTTP_200_OK,
 )
 async def generate_otp(
     account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
     current_account: Account = fastapi.Depends(oauth2_get_current_user),
-) -> dict:
+) -> OtpInGenerateResponse:
     updated_account, otp_secret, otp_auth_url = await account_repo.set_otp_details(account=current_account)
 
     if not updated_account:
         raise await http_exc_500_internal_server_error(error_msg="Failed to generate OTP")
 
-    return {"otp_secret": otp_secret, "otp_auth_url": otp_auth_url}
+    return OtpInGenerateResponse(otp_secret=otp_secret, otp_auth_url=otp_auth_url)
 
 
 @router.put(
     path="/otp/verify",
     name="auth:otp-verify",
-    response_model=dict,
+    response_model=ActionSuccessResponse,
     status_code=fastapi.status.HTTP_200_OK,
 )
 async def verify_otp(
     otp_in_verify: OtpIn = fastapi.Body(..., embed=True),
     account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
     current_account: Account = fastapi.Depends(oauth2_get_current_user),
-) -> dict:
+) -> ActionSuccessResponse:
     if not otp_in_verify.email == current_account.email:
         raise await http_exc_403_forbidden_request(error_msg="Invalid email")
 
@@ -230,7 +231,7 @@ async def verify_otp(
         AccountInRead(id=current_account.id), account_update=AccountInStateUpdate(is_otp_verified=True)
     )
 
-    return {"message": "OTP Token Verified"}
+    return ActionSuccessResponse(action="Verifing OTP", success=True)
 
 
 @router.put(
@@ -264,6 +265,5 @@ async def validate_otp(
     return AccountInResponse(
         authorized_account=AccountWithToken(
             token=jwt_token, hashed_password=current_account.hashed_password, **current_account.__dict__
-        ),
-        is_otp_required=False,
+        )
     )

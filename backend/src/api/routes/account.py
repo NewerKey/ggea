@@ -5,7 +5,13 @@ import fastapi
 from src.api.dependency.crud import get_crud
 from src.api.dependency.header import get_auth_current_user
 from src.models.db.account import Account
-from src.models.schema.account import AccountInDeletionResponse, AccountInResponse, AccountInUpdate, AccountWithToken, AccountInRead
+from src.models.schema.account import (
+    AccountInDeletionResponse,
+    AccountInRead,
+    AccountInResponse,
+    AccountInUpdate,
+    AccountWithToken,
+)
 from src.repository.crud.account import AccountCRUDRepository
 from src.security.authorizations.jwt import jwt_manager
 from src.utility.exceptions.base_exception import BaseException
@@ -34,8 +40,7 @@ async def retrieve_accounts(
             account = AccountInResponse(
                 authorized_account=AccountWithToken(
                     token=jwt_token, hashed_password=db_account.hashed_password, **db_account.__dict__
-                ),
-                is_otp_required=False,
+                )
             )
             db_account_list.append(account)
         return db_account_list
@@ -85,7 +90,9 @@ async def edit_current_user_by_id(
         if not await account_crud.is_credentials_available(account_input=account_update):
             raise await http_exc_400_bad_request(error_msg="Username or email already taken")
 
-    updated_db_account = await account_crud.update_account(AccountInRead(id=current_account.id), account_update=account_update)
+    updated_db_account = await account_crud.update_account(
+        AccountInRead(id=current_account.id), account_update=account_update
+    )
     jwt_token = jwt_manager.generate_jwt(account=updated_db_account)
 
     return AccountInResponse(
