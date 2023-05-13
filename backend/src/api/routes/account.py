@@ -1,5 +1,5 @@
 import uuid
-
+import loguru
 import fastapi
 
 from src.api.dependency.crud import get_crud
@@ -59,13 +59,8 @@ async def get_all_accounts(
     status_code=fastapi.status.HTTP_200_OK,
 )
 async def retrieve_current_account_by_id(
-    id: int, current_account: Account = fastapi.Depends(get_auth_current_user())
+    current_account: Account = fastapi.Depends(get_auth_current_user()),
 ) -> AccountInResponse:
-    if id != current_account.id:
-        raise await http_exc_403_forbidden_request(
-            error_msg="Not authorized to access this account"
-        )
-
     jwt_token = jwt_manager.generate_jwt(account=current_account)
     return AccountInResponse(
         authorized_account=AccountWithToken(
