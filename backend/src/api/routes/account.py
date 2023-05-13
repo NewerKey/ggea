@@ -1,6 +1,7 @@
 import uuid
-import loguru
+
 import fastapi
+import loguru
 
 from src.api.dependency.crud import get_crud
 from src.api.dependency.header import get_auth_current_user
@@ -10,8 +11,8 @@ from src.models.schema.account import (
     AccountInRead,
     AccountInResponse,
     AccountInUpdate,
-    AccountWithToken,
     AccountOutPublic,
+    AccountWithToken,
 )
 from src.repository.crud.account import AccountCRUDRepository
 from src.security.authorizations.jwt import jwt_manager
@@ -31,14 +32,14 @@ router = fastapi.APIRouter(prefix="/account", tags=["account"])
 @router.get(
     path="/all",
     name="account:get-all-accounts",
-    response_model=list[AccountInResponse],
+    response_model=list[AccountOutPublic],
     status_code=fastapi.status.HTTP_200_OK,
 )
 async def get_all_accounts(
     account_crud: AccountCRUDRepository = fastapi.Depends(
         get_crud(AccountCRUDRepository)
     ),
-) -> list[AccountInResponse]:
+) -> list[AccountOutPublic]:
     db_account_list: list = list()
 
     try:
@@ -128,7 +129,9 @@ async def delete_current_account(
             error_msg="Not authorized to access this account"
         )
     try:
-        is_account_deleted = await account_crud.delete_account(id=current_account.id)
+        is_account_deleted = await account_crud.delete_account(
+            AccountInRead(id=current_account.id)
+        )
         return AccountInDeletionResponse(is_deleted=is_account_deleted)
 
     except BaseException as e:

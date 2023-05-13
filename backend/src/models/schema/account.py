@@ -56,7 +56,7 @@ class CurrentAccountInRead(BaseSchemaModel):
 
 class AccountInUpdate(BaseSchemaModel):
     username: str | None
-    email: str | None
+    email: pydantic.EmailStr | None
     password: str | None
 
 

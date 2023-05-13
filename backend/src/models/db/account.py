@@ -1,6 +1,6 @@
 import datetime
 import uuid
-
+import loguru
 import pydantic
 import sqlalchemy
 from sqlalchemy.dialects.postgresql import UUID
@@ -18,41 +18,72 @@ from src.security.authentication.password import pwd_manager
 class Account(DBBaseTable):
     __tablename__ = "account"
 
-    id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     username: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
         sqlalchemy.String(length=64), nullable=False, unique=True
     )
     email: SQLAlchemyMapped[pydantic.EmailStr] = sqlalchemy_mapped_column(
         sqlalchemy.String(length=64), nullable=False, unique=True
     )
-    _hashed_password: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=1024), nullable=False)
-    _hashed_salt: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=1024), nullable=False)
-    is_admin: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=False)
-    is_logged_in: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=True)
-    is_verified: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=False)
+    _hashed_password: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
+        sqlalchemy.String(length=1024), nullable=False
+    )
+    _hashed_salt: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
+        sqlalchemy.String(length=1024), nullable=False
+    )
+    is_admin: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(
+        sqlalchemy.Boolean, default=False
+    )
+    is_logged_in: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(
+        sqlalchemy.Boolean, default=True
+    )
+    is_verified: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(
+        sqlalchemy.Boolean, default=False
+    )
 
-    verification_code: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer(), nullable=False)
+    verification_code: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(
+        sqlalchemy.Integer(), nullable=False
+    )
 
-    is_otp_enabled: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=False)
-    is_otp_verified: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=False)
+    is_otp_enabled: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(
+        sqlalchemy.Boolean, default=False
+    )
+    is_otp_verified: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(
+        sqlalchemy.Boolean, default=False
+    )
 
-    otp_secret: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=64), nullable=True)
-    otp_auth_url: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=256), nullable=True)
+    otp_secret: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
+        sqlalchemy.String(length=64), nullable=True
+    )
+    otp_auth_url: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
+        sqlalchemy.String(length=256), nullable=True
+    )
 
     created_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
-        sqlalchemy.DateTime(timezone=True), nullable=False, server_default=sqlalchemy_functions.now()
+        sqlalchemy.DateTime(timezone=True),
+        nullable=False,
+        server_default=sqlalchemy_functions.now(),
     )
     updated_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
         sqlalchemy.DateTime(timezone=True),
         nullable=True,
         server_onupdate=sqlalchemy.schema.FetchedValue(for_update=True),
     )
-    credentials_validated_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
+    credentials_validated_at: SQLAlchemyMapped[
+        datetime.datetime
+    ] = sqlalchemy_mapped_column(
         sqlalchemy.DateTime(timezone=True),
         nullable=True,
-        default=(datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc) - datetime.timedelta(minutes=5)),
+        default=(
+            datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
+            - datetime.timedelta(minutes=5)
+        ),
     )
-    profile = sqlalchemy_relationship("Profile", uselist=False, back_populates="account")
+    profile = sqlalchemy_relationship(
+        "Profile", uselist=False, back_populates="account"
+    )
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -79,6 +110,10 @@ class Account(DBBaseTable):
         return pwd_manager.is_hashed_password_verified(hashed_salt=self.hashed_salt, password=password, hashed_password=self.hashed_password)  # type: ignore
 
     def otp_loggin_allowed(self, max_time_passed: int = 5) -> bool:
-        return self.credentials_validated_at.replace(tzinfo=datetime.timezone.utc) + datetime.timedelta(
+        return self.credentials_validated_at.replace(
+            tzinfo=datetime.timezone.utc
+        ) + datetime.timedelta(
             minutes=max_time_passed
-        ) < datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
+        ) > datetime.datetime.utcnow().replace(
+            tzinfo=datetime.timezone.utc
+        )

@@ -232,10 +232,15 @@ class AccountCRUDRepository(BaseCRUDRepository):
                 updated_at=sqlalchemy_functions.now(),
             )
         )
-        await self.async_session.execute(statement=update_stmt)
-        await self.async_session.commit()
-        await self.async_session.refresh(instance=db_account)
-        return (db_account, otp_secret, otp_auth_url)
+        try:
+            await self.async_session.execute(statement=update_stmt)
+            await self.async_session.commit()
+            await self.async_session.refresh(instance=db_account)
+            return (otp_secret, otp_auth_url)
+        except Exception as e:
+            await self.async_session.rollback()
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to store otp details!")
 
     async def delete_account(self, account_in_read: AccountInRead) -> bool:
         db_account = await self.read_account(account_in_read=account_in_read)

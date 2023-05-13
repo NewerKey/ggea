@@ -59,13 +59,21 @@ async def account_signup_endpoint(
     request: fastapi.Request,
     background_tasks: FastApiBackgroundTasks,
     account_signup: AccountInSignup = fastapi.Body(..., embed=True),
-    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
-    profile_crud: ProfileCRUDRepository = fastapi.Depends(get_crud(repo_type=ProfileCRUDRepository)),
+    account_crud: AccountCRUDRepository = fastapi.Depends(
+        get_crud(repo_type=AccountCRUDRepository)
+    ),
+    profile_crud: ProfileCRUDRepository = fastapi.Depends(
+        get_crud(repo_type=ProfileCRUDRepository)
+    ),
 ) -> AccountInSignupResponse:
-    is_credential_available = await account_crud.is_credentials_available(account_input=account_signup)
+    is_credential_available = await account_crud.is_credentials_available(
+        account_input=account_signup
+    )
 
     if not is_credential_available:
-        raise await http_exc_400_bad_request(error_msg="Username or email is already taken")
+        raise await http_exc_400_bad_request(
+            error_msg="Username or email is already taken"
+        )
 
     try:
         new_account = await account_crud.create_account(account_signup=account_signup)
@@ -73,7 +81,9 @@ async def account_signup_endpoint(
 
     except BaseException as e:
         loguru.logger.error(e)
-        raise await http_exc_500_internal_server_error(error_msg="Failed to create account")
+        raise await http_exc_500_internal_server_error(
+            error_msg="Failed to create account"
+        )
 
     send_email_background(
         background_tasks=background_tasks,
@@ -81,7 +91,9 @@ async def account_signup_endpoint(
         body={"verification_code": new_account.verification_code},
     )
 
-    return AccountInSignupResponse(username=new_account.username, email=new_account.email, is_profile_created=True)
+    return AccountInSignupResponse(
+        username=new_account.username, email=new_account.email, is_profile_created=True
+    )
 
 
 @router.post(
@@ -94,10 +106,14 @@ async def account_signup_endpoint(
 async def account_singin_endpoint(
     request: fastapi.Request,
     account_signin: AccountInSignin = fastapi.Body(..., embed=True),
-    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
+    account_crud: AccountCRUDRepository = fastapi.Depends(
+        get_crud(repo_type=AccountCRUDRepository)
+    ),
 ) -> AccountInResponse:
     try:
-        logged_in_account = await account_crud.signin_account(account_signin=account_signin)
+        logged_in_account = await account_crud.signin_account(
+            account_signin=account_signin
+        )
     except BaseException as e:
         raise await http_exc_400_bad_request(error_msg=e.error_msg)
 
@@ -109,7 +125,9 @@ async def account_singin_endpoint(
     jwt_token = jwt_manager.generate_jwt(account=logged_in_account)
     return AccountInResponse(
         authorized_account=AccountWithToken(
-            token=jwt_token, hashed_password=logged_in_account.hashed_password, **logged_in_account.__dict__
+            token=jwt_token,
+            hashed_password=logged_in_account.hashed_password,
+            **logged_in_account.__dict__
         )
     )
 
@@ -124,14 +142,20 @@ async def account_singin_endpoint(
 async def account_verification(
     request: fastapi.Request,
     account_in_verification: AccountInVerification = fastapi.Body(..., embed=True),
-    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
+    account_crud: AccountCRUDRepository = fastapi.Depends(
+        get_crud(repo_type=AccountCRUDRepository)
+    ),
 ) -> dict:
     try:
-        is_verified = await account_crud.verify_account(account_in_verification=account_in_verification)
+        is_verified = await account_crud.verify_account(
+            account_in_verification=account_in_verification
+        )
     except BaseException as e:
         raise await http_exc_400_bad_request(error_msg=e.error_msg)
 
-    return AccountOutVerification(email=account_in_verification.email, is_verified=is_verified)
+    return AccountOutVerification(
+        email=account_in_verification.email, is_verified=is_verified
+    )
 
 
 @router.post(
@@ -142,14 +166,19 @@ async def account_verification(
 )
 async def account_logout_endpoint(
     account_signout: AccountInSignout = fastapi.Body(..., embed=True),
-    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
+    account_crud: AccountCRUDRepository = fastapi.Depends(
+        get_crud(repo_type=AccountCRUDRepository)
+    ),
 ) -> AccountInSignoutResponse:
     try:
-        logged_out_account = await account_crud.signout_account(account_signout=account_signout)
+        logged_out_account = await account_crud.signout_account(
+            account_signout=account_signout
+        )
     except BaseException as e:
         raise await http_exc_400_bad_request(error_msg=e.error_msg)
     return AccountInSignoutResponse(
-        username=logged_out_account.username, is_logged_out=logged_out_account.is_logged_in
+        username=logged_out_account.username,
+        is_logged_out=logged_out_account.is_logged_in,
     )
 
 
@@ -197,13 +226,17 @@ async def account_logout_endpoint(
     status_code=fastapi.status.HTTP_200_OK,
 )
 async def generate_otp(
-    account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
+    account_repo: AccountCRUDRepository = fastapi.Depends(
+        get_crud(repo_type=AccountCRUDRepository)
+    ),
     current_account: Account = fastapi.Depends(get_auth_current_user()),
 ) -> OtpInGenerateResponse:
-    updated_account, otp_secret, otp_auth_url = await account_repo.set_otp_details(account=current_account)
-
-    if not updated_account:
-        raise await http_exc_500_internal_server_error(error_msg="Failed to generate OTP")
+    try:
+        otp_secret, otp_auth_url = await account_repo.set_otp_details(
+            account=current_account
+        )
+    except BaseException as e:
+        raise await http_exc_500_internal_server_error(error_msg=e.error_msg)
 
     return OtpInGenerateResponse(otp_secret=otp_secret, otp_auth_url=otp_auth_url)
 
@@ -216,7 +249,9 @@ async def generate_otp(
 )
 async def verify_otp(
     otp_in_verify: OtpIn = fastapi.Body(..., embed=True),
-    account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
+    account_repo: AccountCRUDRepository = fastapi.Depends(
+        get_crud(repo_type=AccountCRUDRepository)
+    ),
     current_account: Account = fastapi.Depends(get_auth_current_user()),
 ) -> ActionSuccessResponse:
     if not otp_in_verify.email == current_account.email:
@@ -227,7 +262,8 @@ async def verify_otp(
         raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
 
     await account_repo.update_account(
-        AccountInRead(id=current_account.id), account_update=AccountInStateUpdate(is_otp_verified=True)
+        AccountInRead(id=current_account.id),
+        account_update=AccountInStateUpdate(is_otp_verified=True),
     )
 
     return ActionSuccessResponse(action="Verifing OTP", success=True)
@@ -241,10 +277,14 @@ async def verify_otp(
 )
 async def validate_otp(
     otp_in_validate: OtpIn = fastapi.Body(..., embed=True),
-    account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
+    account_repo: AccountCRUDRepository = fastapi.Depends(
+        get_crud(repo_type=AccountCRUDRepository)
+    ),
 ) -> AccountInResponse:
     try:
-        current_account = await account_repo.read_account(AccountInRead(email=otp_in_validate.email))
+        current_account = await account_repo.read_account(
+            AccountInRead(email=otp_in_validate.email)
+        )
     except BaseException:
         raise await http_exc_400_bad_request(error_msg="Invalid email")
 
@@ -252,17 +292,25 @@ async def validate_otp(
         raise await http_exc_400_bad_request(error_msg="OTP not verified")
 
     if not current_account.is_logged_in:
-        raise await http_exc_403_forbidden_request(error_msg="Account credentials not verified")
+        raise await http_exc_403_forbidden_request(
+            error_msg="Account credentials not verified"
+        )
 
     if not current_account.otp_loggin_allowed():
-        raise await http_exc_403_forbidden_request(error_msg="Account credentials verifeid too long ago, login again")
+        raise await http_exc_403_forbidden_request(
+            error_msg="Account credentials verifeid too long ago, login again"
+        )
 
-    if not two_factor_auth.validate_otp(otp_token=otp_in_validate.otp_token, otp_secret=current_account.otp_secret):
+    if not two_factor_auth.validate_otp(
+        otp_token=otp_in_validate.otp_token, otp_secret=current_account.otp_secret
+    ):
         raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
 
     jwt_token = jwt_manager.generate_jwt(account=current_account)
     return AccountInResponse(
         authorized_account=AccountWithToken(
-            token=jwt_token, hashed_password=current_account.hashed_password, **current_account.__dict__
+            token=jwt_token,
+            hashed_password=current_account.hashed_password,
+            **current_account.__dict__
         )
     )
