@@ -10,7 +10,7 @@ from src.security.authorizations.jwt import jwt_manager
 from src.utility.exceptions.http.exc_403 import http_exc_403_forbidden_request
 
 # in the documentation of FastAPI the root is simply named "/token"
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/validate_credentials_and_otp")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
 
 async def oauth2_get_current_user(

@@ -12,7 +12,6 @@ from sqlalchemy.sql import functions as sqlalchemy_functions
 
 from src.models.db.account import Account
 from src.models.schema.account import (
-    AccountInOAuthSignIn,
     AccountInRead,
     AccountInSignin,
     AccountInSignout,
@@ -247,31 +246,6 @@ class AccountCRUDRepository(BaseCRUDRepository):
                 is_logged_in=True, credentials_validated_at=datetime.datetime.utcnow()
             ),
         )
-
-        # update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=True)
-        # await self.async_session.execute(statement=update_stmt)
-        # await self.async_session.commit()
-        # await self.async_session.refresh(instance=db_account)
-        # await self.async_session.close()
-        return db_account
-
-    async def signin_oauth_account(self, account_signin: AccountInOAuthSignIn) -> Account:
-        db_account = await self.read_account(account_in_read=AccountInRead(username=account_signin.username))
-
-        if not db_account:
-            raise EntityDoesNotExist(f"Wrong wrong username!")
-
-        if not db_account.is_verified:
-            raise AccountIsNotVerified("Account is not verified! Please verify your account first.")
-
-        if not db_account.is_password_verified(password=account_signin.password):
-            raise PasswordDoesNotMatch("Password does not match! Please try again.")
-
-        update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=True)
-        await self.async_session.execute(statement=update_stmt)
-        await self.async_session.commit()
-        await self.async_session.refresh(instance=db_account)
-        await self.async_session.close()
         return db_account
 
     async def signout_account(self, account_signout: AccountInSignout) -> Account:
