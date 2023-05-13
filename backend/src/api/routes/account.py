@@ -11,6 +11,7 @@ from src.models.schema.account import (
     AccountInResponse,
     AccountInUpdate,
     AccountWithToken,
+    AccountOutPublic,
 )
 from src.repository.crud.account import AccountCRUDRepository
 from src.security.authorizations.jwt import jwt_manager
@@ -24,29 +25,26 @@ from src.utility.exceptions.http.http_4xx import (
 )
 from src.utility.exceptions.http.http_5xx import http_exc_500_internal_server_error
 
-router = fastapi.APIRouter(prefix="/accounts", tags=["accounts"])
+router = fastapi.APIRouter(prefix="/account", tags=["account"])
 
 
 @router.get(
-    path="",
-    name="accounts:retrieve-accounts",
+    path="/all",
+    name="accounts:get-all-accounts",
     response_model=list[AccountInResponse],
     status_code=fastapi.status.HTTP_200_OK,
 )
-async def retrieve_accounts(
-    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
+async def get_all_accounts(
+    account_crud: AccountCRUDRepository = fastapi.Depends(
+        get_crud(AccountCRUDRepository)
+    ),
 ) -> list[AccountInResponse]:
     db_account_list: list = list()
 
     try:
         db_accounts = await account_crud.read_accounts()
         for db_account in db_accounts:
-            jwt_token = jwt_manager.generate_jwt(account=db_account)
-            account = AccountInResponse(
-                authorized_account=AccountWithToken(
-                    token=jwt_token, hashed_password=db_account.hashed_password, **db_account.__dict__
-                )
-            )
+            account = AccountOutPublic(**db_account.__dict__)
             db_account_list.append(account)
         return db_account_list
 
@@ -55,8 +53,8 @@ async def retrieve_accounts(
 
 
 @router.get(
-    path="/{id}",
-    name="accounts:retrieve-current-account_by_id",
+    path="",
+    name="accounts:get-current-account",
     response_model=AccountInResponse,
     status_code=fastapi.status.HTTP_200_OK,
 )
@@ -64,12 +62,16 @@ async def retrieve_current_account_by_id(
     id: int, current_account: Account = fastapi.Depends(get_auth_current_user())
 ) -> AccountInResponse:
     if id != current_account.id:
-        raise await http_exc_403_forbidden_request(error_msg="Not authorized to access this account")
+        raise await http_exc_403_forbidden_request(
+            error_msg="Not authorized to access this account"
+        )
 
     jwt_token = jwt_manager.generate_jwt(account=current_account)
     return AccountInResponse(
         authorized_account=AccountWithToken(
-            token=jwt_token, hashed_password=current_account.hashed_password, **current_account.__dict__
+            token=jwt_token,
+            hashed_password=current_account.hashed_password,
+            **current_account.__dict__
         ),
     )
 
@@ -84,16 +86,24 @@ async def edit_current_user_by_id(
     id: int,
     account_update: AccountInUpdate,
     current_account: Account = fastapi.Depends(get_auth_current_user()),
-    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
+    account_crud: AccountCRUDRepository = fastapi.Depends(
+        get_crud(AccountCRUDRepository)
+    ),
 ) -> AccountInResponse:
     if id != current_account.id:
-        raise await http_exc_403_forbidden_request(error_msg="Not authorized to access this account")
+        raise await http_exc_403_forbidden_request(
+            error_msg="Not authorized to access this account"
+        )
 
-    if (account_update.username and account_update.username != current_account.username) or (
-        account_update.email and account_update.email != current_account.email
-    ):
-        if not await account_crud.is_credentials_available(account_input=account_update):
-            raise await http_exc_400_bad_request(error_msg="Username or email already taken")
+    if (
+        account_update.username and account_update.username != current_account.username
+    ) or (account_update.email and account_update.email != current_account.email):
+        if not await account_crud.is_credentials_available(
+            account_input=account_update
+        ):
+            raise await http_exc_400_bad_request(
+                error_msg="Username or email already taken"
+            )
 
     updated_db_account = await account_crud.update_account(
         AccountInRead(id=current_account.id), account_update=account_update
@@ -102,7 +112,9 @@ async def edit_current_user_by_id(
 
     return AccountInResponse(
         authorized_account=AccountWithToken(
-            token=jwt_token, hashed_password=updated_db_account.hashed_password, **updated_db_account.__dict__
+            token=jwt_token,
+            hashed_password=updated_db_account.hashed_password,
+            **updated_db_account.__dict__
         ),
     )
 
@@ -116,10 +128,14 @@ async def edit_current_user_by_id(
 async def remove_current_account_by_id(
     id: uuid.UUID,
     current_account: Account = fastapi.Depends(get_auth_current_user()),
-    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
+    account_crud: AccountCRUDRepository = fastapi.Depends(
+        get_crud(AccountCRUDRepository)
+    ),
 ) -> AccountInDeletionResponse:
     if id != current_account.id:
-        raise await http_exc_403_forbidden_request(error_msg="Not authorized to access this account")
+        raise await http_exc_403_forbidden_request(
+            error_msg="Not authorized to access this account"
+        )
 
     is_account_deleted = await account_crud.delete_account_by_id(id=id)
     return AccountInDeletionResponse(is_deleted=is_account_deleted)
@@ -134,12 +150,16 @@ async def remove_current_account_by_id(
 async def remove_current_account(
     username: str,
     current_account: Account = fastapi.Depends(get_auth_current_user()),
-    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
+    account_crud: AccountCRUDRepository = fastapi.Depends(
+        get_crud(AccountCRUDRepository)
+    ),
 ) -> AccountInDeletionResponse:
     if username != current_account.username:
         raise await http_exc_403_forbidden_request()
 
-    is_account_deleted = await account_crud.delete_account_by_username(username=username)
+    is_account_deleted = await account_crud.delete_account_by_username(
+        username=username
+    )
     return AccountInDeletionResponse(is_deleted=is_account_deleted)
 
 
@@ -158,7 +178,9 @@ async def retrieve_current_account(
     jwt_token = jwt_manager.generate_jwt(account=current_account)
     return AccountInResponse(
         authorized_account=AccountWithToken(
-            token=jwt_token, hashed_password=current_account.hashed_password, **current_account.__dict__
+            token=jwt_token,
+            hashed_password=current_account.hashed_password,
+            **current_account.__dict__
         ),
     )
 
@@ -173,15 +195,19 @@ async def edit_current_user(
     username: str,
     account_update: AccountInUpdate,
     current_account: Account = fastapi.Depends(get_auth_current_user()),
-    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
+    account_crud: AccountCRUDRepository = fastapi.Depends(
+        get_crud(AccountCRUDRepository)
+    ),
 ) -> AccountInResponse:
     if username != current_account.username:
         raise await http_exc_403_forbidden_request()
 
-    if (account_update.username and account_update.username != current_account.username) or (
-        account_update.email and account_update.email != current_account.email
-    ):
-        if not await account_crud.is_credentials_available(account_input=account_update):
+    if (
+        account_update.username and account_update.username != current_account.username
+    ) or (account_update.email and account_update.email != current_account.email):
+        if not await account_crud.is_credentials_available(
+            account_input=account_update
+        ):
             raise await http_exc_400_bad_request()
 
     updated_db_account = await account_crud.update_account(
@@ -191,6 +217,8 @@ async def edit_current_user(
 
     return AccountInResponse(
         authorized_account=AccountWithToken(
-            token=jwt_token, hashed_password=updated_db_account.hashed_password, **updated_db_account.__dict__
+            token=jwt_token,
+            hashed_password=updated_db_account.hashed_password,
+            **updated_db_account.__dict__
         ),
     )

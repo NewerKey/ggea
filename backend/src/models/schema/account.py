@@ -111,3 +111,8 @@ class AccountInVerification(BaseSchemaModel):
 class AccountOutVerification(BaseSchemaModel):
     email: pydantic.EmailStr
     is_verified: bool
+
+
+class AccountOutPublic(BaseSchemaModel):
+    username: str
+    email: pydantic.EmailStr
