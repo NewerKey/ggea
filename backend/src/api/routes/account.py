@@ -58,7 +58,7 @@ async def get_all_accounts(
     response_model=AccountInResponse,
     status_code=fastapi.status.HTTP_200_OK,
 )
-async def retrieve_current_account_by_id(
+async def get_current_account(
     current_account: Account = fastapi.Depends(get_auth_current_user()),
 ) -> AccountInResponse:
     jwt_token = jwt_manager.generate_jwt(account=current_account)
@@ -116,7 +116,7 @@ async def update_current_account(
     response_model=AccountInDeletionResponse,
     status_code=fastapi.status.HTTP_202_ACCEPTED,
 )
-async def remove_account(
+async def delete_current_account(
     username: str,
     current_account: Account = fastapi.Depends(get_auth_current_user()),
     account_crud: AccountCRUDRepository = fastapi.Depends(
