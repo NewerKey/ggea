@@ -30,7 +30,7 @@ router = fastapi.APIRouter(prefix="/account", tags=["account"])
 
 @router.get(
     path="/all",
-    name="accounts:get-all-accounts",
+    name="account:get-all-accounts",
     response_model=list[AccountInResponse],
     status_code=fastapi.status.HTTP_200_OK,
 )
@@ -54,7 +54,7 @@ async def get_all_accounts(
 
 @router.get(
     path="",
-    name="accounts:get-current-account",
+    name="account:get-current-account",
     response_model=AccountInResponse,
     status_code=fastapi.status.HTTP_200_OK,
 )
@@ -73,11 +73,11 @@ async def retrieve_current_account_by_id(
 
 @router.put(
     path="",
-    name="accounts:update-current-account",
+    name="account:update-current-account",
     response_model=AccountInResponse,
     status_code=fastapi.status.HTTP_200_OK,
 )
-async def edit_current_user_by_id(
+async def update_current_account(
     account_update: AccountInUpdate,
     current_account: Account = fastapi.Depends(get_auth_current_user()),
     account_crud: AccountCRUDRepository = fastapi.Depends(
@@ -112,11 +112,11 @@ async def edit_current_user_by_id(
 
 @router.delete(
     path="/{username}",
-    name="accounts:delete-current",
+    name="account:delete-current-account",
     response_model=AccountInDeletionResponse,
     status_code=fastapi.status.HTTP_202_ACCEPTED,
 )
-async def remove_curren(
+async def remove_account(
     username: str,
     current_account: Account = fastapi.Depends(get_auth_current_user()),
     account_crud: AccountCRUDRepository = fastapi.Depends(
@@ -133,64 +133,3 @@ async def remove_curren(
 
     except BaseException as e:
         raise await http_exc_500_internal_server_error(error_msg=e.error_msg)
-
-
-@router.get(
-    path="/{username}",
-    name="accounts:retrieve-current-account-by-username",
-    response_model=AccountInResponse,
-    status_code=fastapi.status.HTTP_200_OK,
-)
-async def retrieve_current_account(
-    username: str, current_account: Account = fastapi.Depends(get_auth_current_user())
-) -> AccountInResponse:
-    if username != current_account.username:
-        raise await http_exc_403_forbidden_request()
-
-    jwt_token = jwt_manager.generate_jwt(account=current_account)
-    return AccountInResponse(
-        authorized_account=AccountWithToken(
-            token=jwt_token,
-            hashed_password=current_account.hashed_password,
-            **current_account.__dict__
-        ),
-    )
-
-
-@router.put(
-    path="/update/{username}",
-    name="accounts:update-current-account-by-username",
-    response_model=AccountInResponse,
-    status_code=fastapi.status.HTTP_200_OK,
-)
-async def edit_current_user(
-    username: str,
-    account_update: AccountInUpdate,
-    current_account: Account = fastapi.Depends(get_auth_current_user()),
-    account_crud: AccountCRUDRepository = fastapi.Depends(
-        get_crud(AccountCRUDRepository)
-    ),
-) -> AccountInResponse:
-    if username != current_account.username:
-        raise await http_exc_403_forbidden_request()
-
-    if (
-        account_update.username and account_update.username != current_account.username
-    ) or (account_update.email and account_update.email != current_account.email):
-        if not await account_crud.is_credentials_available(
-            account_input=account_update
-        ):
-            raise await http_exc_400_bad_request()
-
-    updated_db_account = await account_crud.update_account(
-        AccountInRead(username=current_account.username), account_update=account_update
-    )
-    jwt_token = jwt_manager.generate_jwt(account=updated_db_account)
-
-    return AccountInResponse(
-        authorized_account=AccountWithToken(
-            token=jwt_token,
-            hashed_password=updated_db_account.hashed_password,
-            **updated_db_account.__dict__
-        ),
-    )
