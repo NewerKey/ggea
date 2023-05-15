@@ -1,6 +1,7 @@
 import datetime
 import uuid
 
+import loguru
 import pydantic
 import sqlalchemy
 from sqlalchemy.dialects.postgresql import UUID
@@ -40,7 +41,9 @@ class Account(DBBaseTable):
     otp_auth_url: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=256), nullable=True)
 
     created_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
-        sqlalchemy.DateTime(timezone=True), nullable=False, server_default=sqlalchemy_functions.now()
+        sqlalchemy.DateTime(timezone=True),
+        nullable=False,
+        server_default=sqlalchemy_functions.now(),
     )
     updated_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
         sqlalchemy.DateTime(timezone=True),
@@ -81,4 +84,4 @@ class Account(DBBaseTable):
     def otp_loggin_allowed(self, max_time_passed: int = 5) -> bool:
         return self.credentials_validated_at.replace(tzinfo=datetime.timezone.utc) + datetime.timedelta(
             minutes=max_time_passed
-        ) < datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
+        ) > datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)

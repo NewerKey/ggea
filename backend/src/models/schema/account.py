@@ -56,7 +56,7 @@ class CurrentAccountInRead(BaseSchemaModel):
 
 class AccountInUpdate(BaseSchemaModel):
     username: str | None
-    email: str | None
+    email: pydantic.EmailStr | None
     password: str | None
 
 
@@ -111,3 +111,8 @@ class AccountInVerification(BaseSchemaModel):
 class AccountOutVerification(BaseSchemaModel):
     email: pydantic.EmailStr
     is_verified: bool
+
+
+class AccountOutPublic(BaseSchemaModel):
+    username: str
+    email: pydantic.EmailStr

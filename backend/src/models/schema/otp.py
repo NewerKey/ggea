@@ -14,9 +14,9 @@ class OtpIn(BaseSchemaModel):
 
 
 class OtpInGenerateResponse(BaseSchemaModel):
-    is_valid: bool
+    otp_secret: str
+    otp_auth_url: str
 
 
 class OtpInVerifyResponse(BaseSchemaModel):
-    otp_secret: str
-    otp_auth_url: str
+    is_valid: bool

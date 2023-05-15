@@ -166,7 +166,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         for key, value in update_data.items():
             if key == "password":
                 salt, password = db_account.set_password(password=update_data["password"])
-                update_stmt = update_stmt.values(hashed_salt=salt, hashed_password=password)
+                update_stmt = update_stmt.values(_hashed_salt=salt, _hashed_password=password)
                 loguru.logger.debug(f"Updating {key} to {value}")
             else:
                 update_stmt = update_stmt.values(**{key: value})
@@ -183,7 +183,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
             loguru.logger.error(e)
             raise DatabaseError(error_msg="Failed to update account in database!")
 
-    async def set_otp_details(self, account: Account) -> tuple[Account, str, str]:
+    async def set_otp_details(self, account: Account) -> tuple[str, str]:
         db_account = await self._read_account_by_id(id=account.id)
 
         if not db_account:
@@ -201,32 +201,31 @@ class AccountCRUDRepository(BaseCRUDRepository):
                 updated_at=sqlalchemy_functions.now(),
             )
         )
-        await self.async_session.execute(statement=update_stmt)
-        await self.async_session.commit()
-        await self.async_session.refresh(instance=db_account)
-        return (db_account, otp_secret, otp_auth_url)
+        try:
+            await self.async_session.execute(statement=update_stmt)
+            await self.async_session.commit()
+            await self.async_session.refresh(instance=db_account)
+            return (otp_secret, otp_auth_url)
+        except Exception as e:
+            await self.async_session.rollback()
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to store otp details!")
 
-    async def delete_account_by_id(self, id: uuid.UUID) -> bool:
-        db_account = await self._read_account_by_id(id=id)
-
-        if not db_account:
-            raise EntityDoesNotExist(f"Account with id `{id}` does not exist!")
-
-        delete_stmt = sqlalchemy.delete(table=Account).where(Account.id == db_account.id)
-        await self.async_session.execute(statement=delete_stmt)
-        await self.async_session.commit()
-        return True
-
-    async def delete_account_by_username(self, username: str) -> bool:
-        db_account = await self._read_account_by_username(username=username)
+    async def delete_account(self, account_in_read: AccountInRead) -> bool:
+        db_account = await self.read_account(account_in_read=account_in_read)
 
         if not db_account:
-            raise EntityDoesNotExist(f"Account with username `{username}` does not exist!")
+            raise EntityDoesNotExist(f"Account with these details does not exist!")
 
-        delete_stmt = sqlalchemy.delete(table=Account).where(Account.username == db_account.username)
-        await self.async_session.execute(statement=delete_stmt)
-        await self.async_session.commit()
-        return True
+        try:
+            delete_stmt = sqlalchemy.delete(table=Account).where(Account.id == db_account.id)
+            await self.async_session.execute(statement=delete_stmt)
+            await self.async_session.commit()
+            return True
+        except Exception as e:
+            await self.async_session.rollback()
+            loguru.logger.error(e)
+            raise DatabaseError(error_msg="Failed to delete account from database!")
 
     async def signin_account(self, account_signin: AccountInSignin) -> Account:
         db_account = await self.read_account(account_in_read=AccountInRead(username=account_signin.username))

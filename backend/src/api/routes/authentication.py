@@ -149,7 +149,8 @@ async def account_logout_endpoint(
     except BaseException as e:
         raise await http_exc_400_bad_request(error_msg=e.error_msg)
     return AccountInSignoutResponse(
-        username=logged_out_account.username, is_logged_out=logged_out_account.is_logged_in
+        username=logged_out_account.username,
+        is_logged_out=logged_out_account.is_logged_in,
     )
 
 
@@ -200,10 +201,10 @@ async def generate_otp(
     account_repo: AccountCRUDRepository = fastapi.Depends(get_crud(repo_type=AccountCRUDRepository)),
     current_account: Account = fastapi.Depends(get_auth_current_user()),
 ) -> OtpInGenerateResponse:
-    updated_account, otp_secret, otp_auth_url = await account_repo.set_otp_details(account=current_account)
-
-    if not updated_account:
-        raise await http_exc_500_internal_server_error(error_msg="Failed to generate OTP")
+    try:
+        otp_secret, otp_auth_url = await account_repo.set_otp_details(account=current_account)
+    except BaseException as e:
+        raise await http_exc_500_internal_server_error(error_msg=e.error_msg)
 
     return OtpInGenerateResponse(otp_secret=otp_secret, otp_auth_url=otp_auth_url)
 
@@ -227,7 +228,8 @@ async def verify_otp(
         raise await http_exc_403_forbidden_request(error_msg="Invalid OTP token")
 
     await account_repo.update_account(
-        AccountInRead(id=current_account.id), account_update=AccountInStateUpdate(is_otp_verified=True)
+        AccountInRead(id=current_account.id),
+        account_update=AccountInStateUpdate(is_otp_verified=True),
     )
 
     return ActionSuccessResponse(action="Verifing OTP", success=True)
