@@ -36,9 +36,7 @@ router = fastapi.APIRouter(prefix="/account", tags=["account"])
     status_code=fastapi.status.HTTP_200_OK,
 )
 async def get_all_accounts(
-    account_crud: AccountCRUDRepository = fastapi.Depends(
-        get_crud(AccountCRUDRepository)
-    ),
+    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
 ) -> list[AccountOutPublic]:
     db_account_list: list = list()
 
@@ -65,9 +63,7 @@ async def get_current_account(
     jwt_token = jwt_manager.generate_jwt(account=current_account)
     return AccountInResponse(
         authorized_account=AccountWithToken(
-            token=jwt_token,
-            hashed_password=current_account.hashed_password,
-            **current_account.__dict__
+            token=jwt_token, hashed_password=current_account.hashed_password, **current_account.__dict__
         ),
     )
 
@@ -81,19 +77,13 @@ async def get_current_account(
 async def update_current_account(
     account_update: AccountInUpdate,
     current_account: Account = fastapi.Depends(get_auth_current_user()),
-    account_crud: AccountCRUDRepository = fastapi.Depends(
-        get_crud(AccountCRUDRepository)
-    ),
+    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
 ) -> AccountInResponse:
-    if (
-        account_update.username and account_update.username != current_account.username
-    ) or (account_update.email and account_update.email != current_account.email):
-        if not await account_crud.is_credentials_available(
-            account_input=account_update
-        ):
-            raise await http_exc_400_bad_request(
-                error_msg="Username or email already taken"
-            )
+    if (account_update.username and account_update.username != current_account.username) or (
+        account_update.email and account_update.email != current_account.email
+    ):
+        if not await account_crud.is_credentials_available(account_input=account_update):
+            raise await http_exc_400_bad_request(error_msg="Username or email already taken")
     try:
         updated_db_account = await account_crud.update_account(
             AccountInRead(id=current_account.id), account_update=account_update
@@ -102,9 +92,7 @@ async def update_current_account(
 
         return AccountInResponse(
             authorized_account=AccountWithToken(
-                token=jwt_token,
-                hashed_password=updated_db_account.hashed_password,
-                **updated_db_account.__dict__
+                token=jwt_token, hashed_password=updated_db_account.hashed_password, **updated_db_account.__dict__
             ),
         )
     except BaseException as e:
@@ -120,18 +108,12 @@ async def update_current_account(
 async def delete_current_account(
     username: str,
     current_account: Account = fastapi.Depends(get_auth_current_user()),
-    account_crud: AccountCRUDRepository = fastapi.Depends(
-        get_crud(AccountCRUDRepository)
-    ),
+    account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
 ) -> AccountInDeletionResponse:
     if username != current_account.username:
-        raise await http_exc_403_forbidden_request(
-            error_msg="Not authorized to access this account"
-        )
+        raise await http_exc_403_forbidden_request(error_msg="Not authorized to access this account")
     try:
-        is_account_deleted = await account_crud.delete_account(
-            AccountInRead(id=current_account.id)
-        )
+        is_account_deleted = await account_crud.delete_account(AccountInRead(id=current_account.id))
         return AccountInDeletionResponse(is_deleted=is_account_deleted)
 
     except BaseException as e:

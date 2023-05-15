@@ -31,15 +31,8 @@ from src.utility.exceptions.custom import (
     VerificationCodeDoesNotMatch,
 )
 from src.utility.exceptions.database import DatabaseError
-from src.utility.exceptions.http.exc_400 import (
-    http_exc_400_credentials_bad_signup_request,
-)
-from src.utility.typing.account import (
-    AccountForInput,
-    AccountForUpdate,
-    AccountRetriever,
-    Accounts,
-)
+from src.utility.exceptions.http.exc_400 import http_exc_400_credentials_bad_signup_request
+from src.utility.typing.account import AccountForInput, AccountForUpdate, AccountRetriever, Accounts
 
 
 class AccountCRUDRepository(BaseCRUDRepository):
@@ -64,11 +57,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return new_account
 
     async def _is_username_available(self, username: str) -> bool:
-        select_stmt = (
-            sqlalchemy.select(Account.username)
-            .select_from(Account)
-            .where(Account.username == username)
-        )
+        select_stmt = sqlalchemy.select(Account.username).select_from(Account).where(Account.username == username)
         query = await self.async_session.execute(select_stmt)
         db_username = query.scalar()
         if db_username:
@@ -76,11 +65,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         return True
 
     async def _is_email_available(self, email: str) -> bool:
-        select_stmt = (
-            sqlalchemy.select(Account.email)
-            .select_from(Account)
-            .where(Account.email == email)
-        )
+        select_stmt = sqlalchemy.select(Account.email).select_from(Account).where(Account.email == email)
         query = await self.async_session.execute(select_stmt)
         db_email = query.scalar()
         if db_email:
@@ -89,16 +74,12 @@ class AccountCRUDRepository(BaseCRUDRepository):
 
     async def is_credentials_available(self, account_input: AccountForInput) -> bool:
         if account_input.email:
-            is_email_available = await self._is_email_available(
-                email=account_input.email
-            )
+            is_email_available = await self._is_email_available(email=account_input.email)
             if not is_email_available:
                 return False
 
         if account_input.username:
-            is_username_taken = await self._is_username_available(
-                username=account_input.username
-            )
+            is_username_taken = await self._is_username_available(username=account_input.username)
             if not is_username_taken:
                 return False
 
@@ -108,9 +89,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
 
     async def read_accounts(self) -> Accounts:
         try:
-            select_stmt = sqlalchemy.select(Account).options(
-                sqlalchemy_selectinload("*")
-            )
+            select_stmt = sqlalchemy.select(Account).options(sqlalchemy_selectinload("*"))
             query = await self.async_session.execute(statement=select_stmt)
             return query.scalars().all()
         except Exception as e:
@@ -121,9 +100,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         if account_in_read.id:
             db_account = await self._read_account_by_id(id=account_in_read.id)
         elif account_in_read.username:
-            db_account = await self._read_account_by_username(
-                username=account_in_read.username
-            )
+            db_account = await self._read_account_by_username(username=account_in_read.username)
         elif account_in_read.email:
             db_account = await self._read_account_by_email(email=account_in_read.email)
 
@@ -163,9 +140,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         select_stmt = sqlalchemy.select(Account).where(Account.username == username)
         query = await self.async_session.execute(statement=select_stmt)
         if not query:
-            raise EntityDoesNotExist(
-                f"Account with username `{username}` does not exist!"
-            )
+            raise EntityDoesNotExist(f"Account with username `{username}` does not exist!")
         return query.scalar()  # type: ignore
 
     async def _read_account_by_email(self, email: pydantic.EmailStr) -> Account:
@@ -175,9 +150,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
             raise EntityDoesNotExist(f"Account with email `{email}` does not exist!")
         return query.scalar()  # type: ignore
 
-    async def update_account(
-        self, account_in_read: AccountInRead, account_update: AccountForUpdate
-    ) -> Account:
+    async def update_account(self, account_in_read: AccountInRead, account_update: AccountForUpdate) -> Account:
         update_data = account_update.dict(exclude_unset=True)
         db_account = await self.read_account(account_in_read=account_in_read)
 
@@ -192,12 +165,8 @@ class AccountCRUDRepository(BaseCRUDRepository):
 
         for key, value in update_data.items():
             if key == "password":
-                salt, password = db_account.set_password(
-                    password=update_data["password"]
-                )
-                update_stmt = update_stmt.values(
-                    hashed_salt=salt, hashed_password=password
-                )
+                salt, password = db_account.set_password(password=update_data["password"])
+                update_stmt = update_stmt.values(_hashed_salt=salt, _hashed_password=password)
                 loguru.logger.debug(f"Updating {key} to {value}")
             else:
                 update_stmt = update_stmt.values(**{key: value})
@@ -214,7 +183,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
             loguru.logger.error(e)
             raise DatabaseError(error_msg="Failed to update account in database!")
 
-    async def set_otp_details(self, account: Account) -> tuple[Account, str, str]:
+    async def set_otp_details(self, account: Account) -> tuple[str, str]:
         db_account = await self._read_account_by_id(id=account.id)
 
         if not db_account:
@@ -249,9 +218,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
             raise EntityDoesNotExist(f"Account with these details does not exist!")
 
         try:
-            delete_stmt = sqlalchemy.delete(table=Account).where(
-                Account.id == db_account.id
-            )
+            delete_stmt = sqlalchemy.delete(table=Account).where(Account.id == db_account.id)
             await self.async_session.execute(statement=delete_stmt)
             await self.async_session.commit()
             return True
@@ -261,17 +228,13 @@ class AccountCRUDRepository(BaseCRUDRepository):
             raise DatabaseError(error_msg="Failed to delete account from database!")
 
     async def signin_account(self, account_signin: AccountInSignin) -> Account:
-        db_account = await self.read_account(
-            account_in_read=AccountInRead(username=account_signin.username)
-        )
+        db_account = await self.read_account(account_in_read=AccountInRead(username=account_signin.username))
 
         if not db_account:
             raise EntityDoesNotExist("Wrong username or wrong email!")
 
         if not db_account.is_verified:
-            raise AccountIsNotVerified(
-                "Account is not verified! Please verify your account first."
-            )
+            raise AccountIsNotVerified("Account is not verified! Please verify your account first.")
 
         if not db_account.is_password_verified(password=account_signin.password):
             raise PasswordDoesNotMatch("Password does not match! Please try again.")
@@ -288,9 +251,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
         try:
             db_account = await self._read_account_by_id(id=account_signout.id)  # type: ignore
             update_stmt = (
-                sqlalchemy.update(table=Account)
-                .where(Account.id == db_account.id)
-                .values(is_logged_in=False)
+                sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_logged_in=False)
             )
             await self.async_session.execute(statement=update_stmt)
             await self.async_session.commit()
@@ -304,18 +265,12 @@ class AccountCRUDRepository(BaseCRUDRepository):
         db_account = await self._read_account_by_username(username=username)
 
         if not db_account:
-            raise EntityDoesNotExist(
-                f"Account with username `{username}` does not exist!"
-            )
+            raise EntityDoesNotExist(f"Account with username `{username}` does not exist!")
 
         return db_account.is_otp_enabled
 
-    async def verify_account(
-        self, account_in_verification: AccountInVerification
-    ) -> bool:
-        db_account = await self._read_account_by_email(
-            email=account_in_verification.email
-        )
+    async def verify_account(self, account_in_verification: AccountInVerification) -> bool:
+        db_account = await self._read_account_by_email(email=account_in_verification.email)
 
         if not db_account:
             raise EntityDoesNotExist(f"Account with email does not exist!")
@@ -327,11 +282,7 @@ class AccountCRUDRepository(BaseCRUDRepository):
             raise VerificationCodeDoesNotMatch("Verification code does not match!")
 
         else:
-            update_stmt = (
-                sqlalchemy.update(table=Account)
-                .where(Account.id == db_account.id)
-                .values(is_verified=True)
-            )
+            update_stmt = sqlalchemy.update(table=Account).where(Account.id == db_account.id).values(is_verified=True)
             await self.async_session.execute(statement=update_stmt)
             await self.async_session.commit()
             await self.async_session.refresh(instance=db_account)
