@@ -27,12 +27,10 @@ class PokemonImageCRUDRepository(BaseCRUDRepository):
             new_pokemon_image.file_name = await self._generate_file_name()
             new_pokemon_image.profile = current_profile
             # await self._save_image_on_S3(pokemon_image_create.image)
-
             self.async_session.add(instance=new_pokemon_image)
             await self.async_session.commit()
             await self.async_session.refresh(instance=new_pokemon_image)
             await self.async_session.close()
-            loguru.logger.info("Pokemon image created")
 
         except:
             loguru.logger.error("Error in create_pokemon_image()")
