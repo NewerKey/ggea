@@ -1,9 +1,9 @@
 import typing
 
 import fastapi
+import loguru
 import pydantic
 
-import loguru
 from src.api.dependency.crud import get_crud
 from src.config.setup import settings
 from src.models.db.account import Account

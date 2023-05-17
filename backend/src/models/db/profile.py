@@ -2,13 +2,13 @@ import datetime
 import uuid
 
 import sqlalchemy
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import (
     Mapped as SQLAlchemyMapped,
     mapped_column as sqlalchemy_mapped_column,
     relationship as sqlalchemy_relationship,
 )
 from sqlalchemy.sql import functions as sqlalchemy_functions
-from sqlalchemy.dialects.postgresql import UUID
 
 from src.models.db.base import DBBaseTable
 

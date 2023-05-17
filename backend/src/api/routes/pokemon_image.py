@@ -48,19 +48,7 @@ async def get_pokemon_image(
         raise await http_exc_404_id_not_found_request(id=0)
 
     for pokemon_image in db_pokemon_images:
-        new_pokemon_image = PokemonImageInResponse(
-            id=pokemon_image.id,
-            file_name=pokemon_image.file_name,
-            name=pokemon_image.name,
-            nickname=pokemon_image.nickname,
-            correct_predicted=pokemon_image.correct_predicted,
-            wrong_predicted=pokemon_image.wrong_predicted,
-            win=pokemon_image.win,
-            loss=pokemon_image.loss,
-            created_at=pokemon_image.created_at,
-            updated_at=pokemon_image.updated_at,
-            profile_id=pokemon_image.profile_id,
-        )
+        new_pokemon_image = PokemonImageInResponse(**pokemon_image.__dict__)
         pokemon_image_list.append(new_pokemon_image)
 
     return pokemon_image_list
@@ -78,34 +66,12 @@ async def upload_pokemon_image(
     profile_crud_repo: ProfileCRUDRepository = fastapi.Depends(get_crud(repo_type=ProfileCRUDRepository)),
     current_account: Account = fastapi.Depends(get_auth_current_user()),
 ) -> PokemonImageInResponse:
-    loguru.logger.info("getting current_profile")
     current_profile = await profile_crud_repo.read_profile_by_account_id(account_id=current_account.id)
-    # #! DIRTY HACK -----------------------------------------------------
-    # # expunge all to avoid "profile is already attached to session n+1 this is session n" error
-    # loguru.logger.info("getting session of current_profile")
-    # session_of_current_profile = object_session(current_profile)
-    # session_of_current_profile.expunge_all()
-    # loguru.logger.info("Successfully expunged all")
-    # #! ----------------------------------------------------------------
-    loguru.logger.info("Successfully got current_profile")
-    loguru.logger.info("creating pokemon_image")
+
     db_pokemon_image = await pokemon_image_repo.create_pokemon_image(
         pokemon_image_create=pokemon_image_create, current_profile=current_profile
     )
-    loguru.logger.info("Successfully created pokemon_image")
 
-    new_pokemon_image = PokemonImageInResponse(
-        id=db_pokemon_image.id,
-        file_name=db_pokemon_image.file_name,
-        name=db_pokemon_image.name,
-        nickname=db_pokemon_image.nickname,
-        correct_predicted=db_pokemon_image.correct_predicted,
-        wrong_predicted=db_pokemon_image.wrong_predicted,
-        win=db_pokemon_image.win,
-        loss=db_pokemon_image.loss,
-        created_at=db_pokemon_image.created_at,
-        updated_at=db_pokemon_image.updated_at,
-        profile_id=db_pokemon_image.profile_id,
-    )
+    new_pokemon_image = PokemonImageInResponse(**db_pokemon_image.__dict__)
 
     return new_pokemon_image
