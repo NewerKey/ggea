@@ -1,11 +1,13 @@
 import datetime
 
+import uuid
 import sqlalchemy
 from sqlalchemy.orm import (
     Mapped as SQLAlchemyMapped,
     mapped_column as sqlalchemy_mapped_column,
     relationship as sqlalchemy_relationship,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import functions as sqlalchemy_functions
 
 from src.models.db.base import DBBaseTable
@@ -14,7 +16,7 @@ from src.models.db.base import DBBaseTable
 class PokemonImage(DBBaseTable):
     __tablename__ = "pokemon_image"
 
-    id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(primary_key=True, autoincrement="auto")
+    id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     file_name: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
         sqlalchemy.String(length=124), nullable=False, default=None
     )

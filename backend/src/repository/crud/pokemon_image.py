@@ -23,13 +23,18 @@ class PokemonImageCRUDRepository(BaseCRUDRepository):
         self, pokemon_image_create: PokemonImageInCreate, current_profile: Profile
     ) -> PokemonImage:
         try:
+            loguru.logger.info("Creating pokemon image ------ STEP 1")
             new_pokemon_image = PokemonImage(**pokemon_image_create.dict(exclude={"image"}))
+            loguru.logger.info("Creating pokemon image ------ STEP 2")
             new_pokemon_image.file_name = await self._generate_file_name()
+            loguru.logger.info("Creating pokemon image ------ STEP 3")
             new_pokemon_image.profile = current_profile
             # await self._save_image_on_S3(pokemon_image_create.image)
-
+            loguru.logger.info("Creating pokemon image ------ STEP 4")
             self.async_session.add(instance=new_pokemon_image)
+            loguru.logger.info("Creating pokemon image ------ STEP 5")
             await self.async_session.commit()
+            loguru.logger.info("Creating pokemon image ------ STEP 6")
             await self.async_session.refresh(instance=new_pokemon_image)
             await self.async_session.close()
             loguru.logger.info("Pokemon image created")

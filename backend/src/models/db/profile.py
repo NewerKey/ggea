@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 import sqlalchemy
 from sqlalchemy.orm import (
@@ -7,6 +8,7 @@ from sqlalchemy.orm import (
     relationship as sqlalchemy_relationship,
 )
 from sqlalchemy.sql import functions as sqlalchemy_functions
+from sqlalchemy.dialects.postgresql import UUID
 
 from src.models.db.base import DBBaseTable
 
@@ -14,7 +16,7 @@ from src.models.db.base import DBBaseTable
 class Profile(DBBaseTable):
     __tablename__ = "profile"
 
-    id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(primary_key=True, autoincrement="auto")
+    id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     first_name: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
         sqlalchemy.String(length=64), nullable=True, default=None
     )

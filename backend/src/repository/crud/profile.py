@@ -53,8 +53,15 @@ class ProfileCRUDRepository(BaseCRUDRepository):
 
             if not query:
                 raise EntityDoesNotExist(error_msg=f"Profile related to that account ID does not exist")
+            
+            loguru.logger.info(f"Closing db session of profile...")
+            await self.async_session.close()
+            loguru.logger.info(f"Closed db session of profile")
 
             return query.scalar()
+        
+
+
         except Exception as e:
             loguru.logger.error(e)
             raise DatabaseError(error_msg="Failed to read profile by account id")

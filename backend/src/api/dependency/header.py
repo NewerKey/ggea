@@ -3,6 +3,7 @@ import typing
 import fastapi
 import pydantic
 
+import loguru
 from src.api.dependency.crud import get_crud
 from src.config.setup import settings
 from src.models.db.account import Account
@@ -46,6 +47,8 @@ async def _retrieve_current_user(
     account_crud: AccountCRUDRepository = fastapi.Depends(get_crud(AccountCRUDRepository)),
     token: str = fastapi.Depends(_get_auth_header_retriever()),
 ) -> Account:
+    loguru.logger.info(f"Authorizing user")
+
     try:
         username, email = jwt_manager.retrieve_details_from_jwt(token=token)
 
