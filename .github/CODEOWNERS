@@ -1,9 +1,9 @@
 # Python related code
-*.py @Aeternalis-Ingenium @JosefLeinweber
+*.py @NewerKey
 
 # DevOps related code
 *.yml @NewerKey 
 *.yaml @NewerKey
-*.tf @NewerKey @JosefLeinweber
-Dockerfile @NewerKey @JosefLeinweber
-Dockerfile.* @NewerKey @JosefLeinweber
+*.tf @NewerKey 
+Dockerfile @NewerKey 
+Dockerfile.* @NewerKey 
