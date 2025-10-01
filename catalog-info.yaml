@@ -1,0 +1,28 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ggea
+  description: Gotta Guess Them All is a Pokemon world combined with Machine Learning technology where users battle each others to become the Grandmaster of Classification Problem!
+  annotations:
+    github.com/project-slug: 'NewerKey/ggea'
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: website
+  owner: ggea_team
+  lifecycle: development
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: ggea_team
+  description: The team is responsible for the development and maintenance of the platform.
+spec:
+  type: team
+  profile:
+    displayName: Infrastructure Team
+    email: infra@code-idp.com
+  children: []
+  members: [Yvette...]
