@@ -9,6 +9,7 @@ spec:
   lifecycle: experimental
   owner: user:default/yvette
 
+---
 
 apiVersion: backstage.io/v1alpha1
 kind: User
