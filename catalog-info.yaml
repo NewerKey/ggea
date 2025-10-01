@@ -6,5 +6,17 @@ metadata:
     github.com/project-slug: NewerKey/ggea
 spec:
   type: other
-  lifecycle: unknown
-  owner: Yvette
+  lifecycle: experimental
+  owner: group:default/yvette
+
+
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: yvette
+spec:
+  profile:
+    displayName: Yvette
+    email: yvette.nartey@code.berlin
+  memberOf: []
+
